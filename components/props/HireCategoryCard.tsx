@@ -55,7 +55,7 @@ export function HireCategoryCard({
           />
         </div>
 
-        <div className="relative flex flex-1 flex-col items-center px-5 pb-7 pt-9 text-center">
+        <div className="relative flex flex-1 flex-col items-center px-4 pb-6 pt-8 text-center sm:px-5 sm:pb-7 sm:pt-9">
           <div
             className="absolute -top-5 left-1/2 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full bg-sage shadow-sm"
             aria-hidden
@@ -66,7 +66,7 @@ export function HireCategoryCard({
           <h3 className="font-serif text-sm font-light uppercase tracking-[0.18em] text-foreground sm:text-base">
             {name}
           </h3>
-          <p className="mt-3 text-[10px] font-light uppercase tracking-[0.22em] text-foreground-soft transition-colors group-hover:text-sage sm:text-[11px]">
+          <p className="mt-3 text-xs font-light uppercase tracking-[0.18em] text-foreground-soft transition-colors group-hover:text-sage">
             View collection →
           </p>
         </div>

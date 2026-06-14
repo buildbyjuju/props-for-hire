@@ -55,7 +55,7 @@ function OptionPills({
             type="button"
             onClick={() => onChange(option)}
             className={cn(
-              "rounded-full border px-4 py-2 text-xs uppercase tracking-wider transition-colors",
+              "min-h-11 rounded-full border px-4 py-2.5 text-xs uppercase tracking-wider transition-colors",
               value === option
                 ? "border-sage bg-sage text-black"
                 : "border-sage/30 bg-cream text-foreground hover:border-sage",

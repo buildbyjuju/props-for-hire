@@ -15,16 +15,21 @@ function NavLink({
   href,
   label,
   onClick,
+  className,
 }: {
   href: string;
   label: string;
   onClick?: () => void;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className="text-xs font-bold uppercase tracking-luxury text-black transition-colors hover:text-warm-white"
+      className={cn(
+        "text-xs font-bold uppercase tracking-luxury text-black transition-colors hover:text-warm-white",
+        className,
+      )}
     >
       {label}
     </Link>
@@ -37,7 +42,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-cream/20 bg-cream/35 backdrop-blur-lg backdrop-saturate-150">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:py-5">
         <Logo variant="header" />
 
         {/* Desktop nav */}
@@ -64,28 +69,26 @@ export function Header() {
           </Button>
         </div>
 
-        {/* Mobile */}
-        <div className="flex items-center gap-3 lg:hidden">
+        {/* Mobile & tablet */}
+        <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
           <Link
             href="/cart"
-            className="relative text-black"
+            className="relative flex h-10 w-10 items-center justify-center text-black"
             aria-label="Cart"
           >
             <ShoppingBag className="h-[18px] w-[18px] stroke-[1.25]" />
             {count > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-warm-white text-[9px] text-black">
+              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-warm-white text-[9px] text-black">
                 {count}
               </span>
             )}
           </Link>
-          <Button size="sm" variant="default" className="font-bold" asChild>
-            <Link href="/#contact">Contact</Link>
-          </Button>
           <button
             type="button"
-            className="text-black"
+            className="flex h-10 w-10 items-center justify-center text-black"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
+            aria-expanded={open}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -98,15 +101,22 @@ export function Header() {
           open ? "block" : "hidden",
         )}
       >
-        <nav className="flex flex-col items-center gap-5 px-6 py-8">
+        <nav className="flex flex-col items-center gap-4 px-4 py-6 sm:gap-5 sm:px-6 sm:py-8">
           {navLinks.map((link) => (
             <NavLink
               key={link.href}
               href={link.href}
               label={link.label}
               onClick={() => setOpen(false)}
+              className="py-1 text-sm sm:text-xs"
             />
           ))}
+          <NavLink
+            href="/#contact"
+            label="Contact"
+            onClick={() => setOpen(false)}
+            className="py-1 text-sm sm:text-xs"
+          />
         </nav>
       </div>
     </header>

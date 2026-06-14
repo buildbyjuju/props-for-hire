@@ -44,7 +44,7 @@ export function ItemCard({
 
   return (
     <Card>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-t-3xl bg-cream">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-t-3xl bg-cream sm:aspect-[4/5]">
         <Image
           src={imageUrl}
           alt={item.name}
@@ -78,7 +78,7 @@ export function ItemCard({
           </p>
         ) : null}
       </CardHeader>
-      <CardContent className="flex flex-col items-center gap-6 pb-10 pt-4">
+      <CardContent className="flex flex-col items-center gap-4 pb-8 pt-4 sm:gap-6 sm:pb-10">
         <div className="text-center">
           <p className="font-serif text-xl font-bold text-sage sm:text-2xl">
             {priceLabel}

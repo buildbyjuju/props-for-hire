@@ -46,7 +46,7 @@ export function QuoteForm() {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="w-full space-y-4 rounded-2xl bg-sage p-8 shadow-luxury sm:p-10"
+      className="w-full space-y-4 rounded-2xl bg-sage p-5 shadow-luxury sm:p-8 lg:p-10"
     >
       <div className="space-y-1.5">
         <Label htmlFor="name" className="text-warm-white/80">

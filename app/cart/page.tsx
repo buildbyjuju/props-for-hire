@@ -89,36 +89,36 @@ export default function CartPage() {
 
   if (isLoading) {
     return (
-      <div className="py-32 text-center text-sm font-light text-foreground-soft">
+      <div className="py-16 text-center text-sm font-light text-foreground-soft sm:py-32">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="bg-warm-white py-20 sm:py-28">
-      <div className="mx-auto max-w-2xl px-6">
-        <h1 className="text-center font-serif text-4xl font-light text-foreground">
+    <div className="bg-warm-white py-12 sm:py-20 lg:py-28">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6">
+        <h1 className="text-center font-serif text-3xl font-light text-foreground sm:text-4xl">
           Your selection
         </h1>
-        <p className="mt-4 text-center text-sm font-light text-foreground-soft">
+        <p className="mt-3 text-center text-sm font-light text-foreground-soft sm:mt-4">
           Review your reserved pieces before secure checkout.
         </p>
 
         {cart.length === 0 ? (
-          <div className="mt-16 rounded-3xl bg-cream p-12 text-center shadow-luxury">
+          <div className="mt-10 rounded-3xl bg-cream p-8 text-center shadow-luxury sm:mt-16 sm:p-12">
             <p className="font-light text-foreground-soft">Your selection is empty.</p>
             <Button className="mt-8" variant="outline" asChild>
               <Link href="/props">View collections</Link>
             </Button>
           </div>
         ) : (
-          <div className="mt-16 space-y-10">
-            <ul className="space-y-6">
+          <div className="mt-10 space-y-8 sm:mt-16 sm:space-y-10">
+            <ul className="space-y-4 sm:space-y-6">
               {cart.map((line) => (
                 <li
                   key={cartLineKey(line)}
-                  className="flex gap-5 rounded-3xl bg-cream p-6 shadow-luxury"
+                  className="flex gap-4 rounded-3xl bg-cream p-4 shadow-luxury sm:gap-5 sm:p-6"
                 >
                   <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-2xl bg-sage-muted">
                     {line.imageUrl && (
@@ -175,7 +175,7 @@ export default function CartPage() {
               ))}
             </ul>
 
-            <form onSubmit={handleCheckout} className="space-y-6 rounded-3xl bg-cream p-8 shadow-luxury">
+            <form onSubmit={handleCheckout} className="space-y-5 rounded-3xl bg-cream p-5 shadow-luxury sm:space-y-6 sm:p-8">
               <h2 className="text-center font-serif text-xl font-light text-foreground">
                 Checkout
               </h2>
@@ -209,7 +209,7 @@ export default function CartPage() {
                       type="button"
                       onClick={() => handleFulfillmentChange(option.id)}
                       className={cn(
-                        "rounded-full border px-4 py-2 text-xs uppercase tracking-wider transition-colors",
+                        "min-h-11 rounded-full border px-4 py-2.5 text-xs uppercase tracking-wider transition-colors",
                         fulfillmentMethod === option.id
                           ? "border-sage bg-sage text-black"
                           : "border-sage/30 bg-warm-white text-foreground hover:border-sage",
@@ -256,7 +256,7 @@ export default function CartPage() {
                 ) : null}
               </fieldset>
 
-              <div className="rounded-2xl bg-warm-white px-6 py-5 text-center">
+              <div className="rounded-2xl bg-warm-white px-4 py-4 text-center sm:px-6 sm:py-5">
                 {bondTotal > 0 || deliveryFee > 0 ? (
                   <div className="space-y-1 text-sm font-light text-foreground-soft">
                     <p>Hire: {formatPrice(hireTotal)}</p>
@@ -271,7 +271,7 @@ export default function CartPage() {
                 <p className="mt-3 text-xs uppercase tracking-luxury text-foreground-soft">
                   Total due
                 </p>
-                <p className="mt-2 font-serif text-3xl font-light text-foreground">
+                <p className="mt-2 font-serif text-2xl font-light text-foreground sm:text-3xl">
                   {formatPrice(checkoutTotal)}
                 </p>
               </div>

@@ -27,6 +27,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -35,6 +36,7 @@ body {
   font-family: var(--font-jost), system-ui, sans-serif;
   font-weight: 300;
   letter-spacing: 0.02em;
+  overflow-x: clip;
 }
 
 .font-serif {
@@ -43,7 +45,22 @@ body {
 }
 
 .tracking-luxury {
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
+}
+
+@media (min-width: 768px) {
+  .tracking-luxury {
+    letter-spacing: 0.2em;
+  }
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 .shadow-luxury {
@@ -55,8 +72,15 @@ body {
 }
 
 .section-padding {
-  padding-top: 40px;
-  padding-bottom: 40px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+@media (min-width: 640px) {
+  .section-padding {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
 }
 
 @media (min-width: 768px) {
