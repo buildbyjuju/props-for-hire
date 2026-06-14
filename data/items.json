@@ -1,0 +1,155 @@
+{
+  "categories": [
+    {
+      "slug": "backdrops",
+      "name": "Backdrops",
+      "description": "Sculptural arches and panels for unforgettable photo moments.",
+      "sortOrder": 1,
+      "imageUrl": "/props/backdrops/backdrops-showcase.png",
+      "items": [
+        {
+          "slug": "square-backdrop",
+          "name": "Square Backdrop",
+          "description": "Clean square backdrop for photo moments, cake tables, and styled setups.",
+          "priceCents": 5000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/backdrops/square-backdrop.jpg"]
+        },
+        {
+          "slug": "round-backdrop",
+          "name": "Round Backdrop",
+          "description": "Soft round backdrop — a refined frame for portraits and celebration styling.",
+          "priceCents": 5000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/backdrops/round-backdrop.jpg"]
+        },
+        {
+          "slug": "arch-backdrop",
+          "name": "Arch Backdrop",
+          "description": "Statement arch backdrop for unforgettable photos and event focal points.",
+          "priceCents": 5000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/backdrops/arch-backdrop.jpg"]
+        }
+      ]
+    },
+    {
+      "slug": "cake-plinth-and-stands",
+      "name": "Cake Plinth & Stands",
+      "description": "Elegant plinths and display stands to showcase cakes and styling details.",
+      "sortOrder": 2,
+      "imageUrl": "/hero.jpg",
+      "items": [
+        {
+          "slug": "black-plinth",
+          "name": "Black Plinth",
+          "description": "Sleek black display plinth — choose your height for cakes, florals, or styling pieces.",
+          "priceCents": 5000,
+          "quantityAvailable": 3,
+          "imageUrls": ["/props/plinths/black-plinth.jpg"],
+          "sizes": ["100cm", "75cm", "50cm"]
+        },
+        {
+          "slug": "white-ribbed-plinth",
+          "name": "White Ribbed Plinth",
+          "description": "Classic white ribbed plinth with a refined fluted finish.",
+          "priceCents": 5000,
+          "quantityAvailable": 5,
+          "imageUrls": ["/props/plinths/white-ribbed-plinth.jpg"],
+          "sizes": ["90cm", "75cm", "70cm", "60cm", "50cm"]
+        },
+        {
+          "slug": "clear-plinth",
+          "name": "Clear Plinth",
+          "description": "Modern clear acrylic plinth for a light, floating display effect.",
+          "priceCents": 5000,
+          "quantityAvailable": 5,
+          "imageUrls": ["/props/plinths/clear-plinth.jpg"],
+          "sizes": ["110cm", "90cm", "75cm", "70cm", "50cm"]
+        }
+      ]
+    },
+    {
+      "slug": "table-and-buffet",
+      "name": "Table & Buffet",
+      "description": "Refined tablescapes and buffet styling for dining and dessert displays.",
+      "sortOrder": 3,
+      "imageUrl": "/props/raisers/white-raisers.jpg",
+      "items": [
+        {
+          "slug": "white-raisers",
+          "name": "White Raisers",
+          "description": "Clean white cake raisers to lift desserts and styling pieces on your table or buffet.",
+          "priceCents": 6000,
+          "quantityAvailable": 2,
+          "imageUrls": ["/props/raisers/white-raisers.jpg"],
+          "setIncludes": "Set of 6 pieces — 5in · 6in · 7in · 8in · 9in · 10in",
+          "setOptions": ["1 set", "2 sets"]
+        },
+        {
+          "slug": "clear-raisers",
+          "name": "Clear Raisers",
+          "description": "Clear acrylic cake raisers for a light, floating display on your table or buffet.",
+          "priceCents": 6000,
+          "quantityAvailable": 2,
+          "imageUrls": ["/props/raisers/clear-raisers.jpg"],
+          "setIncludes": "Set of 6 pieces — 5in · 6in · 7in · 8in · 9in · 10in",
+          "setOptions": ["1 set", "2 sets"]
+        },
+        {
+          "slug": "long-table-styling",
+          "name": "Long Table Styling",
+          "description": "Full long-table setup with linens, runners, centrepieces, and place settings.",
+          "priceCents": 45000,
+          "quantityAvailable": 2,
+          "imageUrls": ["/hero.jpg"]
+        },
+        {
+          "slug": "buffet-display-setup",
+          "name": "Buffet Display Setup",
+          "description": "Styled buffet table with plinths, tiers, and coordinated décor.",
+          "priceCents": 38000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/hero.jpg"]
+        }
+      ]
+    },
+    {
+      "slug": "neon-signs",
+      "name": "Neon Signs",
+      "description": "Soft-glow script pieces for romantic, modern celebrations.",
+      "sortOrder": 4,
+      "imageUrl": "/props/neon/light-number.jpg",
+      "items": [
+        {
+          "slug": "light-number",
+          "name": "Light Number",
+          "description": "Glow neon number hire — perfect for birthdays, ages, and personalised styling.",
+          "priceCents": 2500,
+          "bondCents": 5000,
+          "quantityAvailable": 10,
+          "imageUrls": ["/props/neon/light-number.jpg"],
+          "sizes": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+          "selectionLabel": "Choose number",
+          "selectionDisplay": "Number"
+        },
+        {
+          "slug": "happy-birthday-neon",
+          "name": "Happy Birthday",
+          "description": "Warm white Happy Birthday neon — a classic statement for birthday celebrations.",
+          "priceCents": 3000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/neon/happy-birthday.jpg"]
+        },
+        {
+          "slug": "oh-baby-neon",
+          "name": "Oh Baby",
+          "description": "Soft-glow Oh Baby neon — perfect for baby showers and gender reveals.",
+          "priceCents": 3000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/neon/oh-baby.jpg"]
+        }
+      ]
+    }
+  ]
+}

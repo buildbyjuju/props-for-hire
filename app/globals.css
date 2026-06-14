@@ -1,0 +1,74 @@
+@import "tailwindcss";
+@import "react-day-picker/style.css";
+
+:root {
+  --cream: #f8f5f0;
+  --warm-white: #fffdfb;
+  --sage: #a8b5a2;
+  --sage-light: #c5cfc0;
+  --sage-muted: #dce3d8;
+  --foreground: #5c5a56;
+  --foreground-soft: #8a8780;
+  --background: var(--warm-white);
+}
+
+@theme inline {
+  --color-cream: var(--cream);
+  --color-warm-white: var(--warm-white);
+  --color-sage: var(--sage);
+  --color-sage-light: var(--sage-light);
+  --color-sage-muted: var(--sage-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-soft: var(--foreground-soft);
+  --color-background: var(--background);
+  --font-sans: var(--font-jost);
+  --font-serif: var(--font-cormorant);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jost), system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+.font-serif {
+  font-family: var(--font-cormorant), Georgia, serif;
+  letter-spacing: 0.04em;
+}
+
+.tracking-luxury {
+  letter-spacing: 0.2em;
+}
+
+.shadow-luxury {
+  box-shadow: 0 8px 32px rgba(168, 181, 162, 0.12);
+}
+
+.shadow-luxury-hover {
+  box-shadow: 0 16px 48px rgba(168, 181, 162, 0.18);
+}
+
+.section-padding {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding-top: 50px;
+    padding-bottom: 50px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-top: 80px;
+    padding-bottom: 80px;
+  }
+}
