@@ -20,7 +20,7 @@ export function HeroSection() {
             Curated props and full styling for celebrations that feel timeless,
             refined, and unmistakably yours.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3 sm:gap-4 lg:mt-10 lg:justify-start">
+          <div className="mt-8 hidden flex-wrap justify-center gap-3 sm:gap-4 lg:mt-10 lg:flex lg:justify-start">
             <Button size="lg" className="min-h-11" asChild>
               <Link href="/#props-hire">Props for Hire</Link>
             </Button>
@@ -49,6 +49,21 @@ export function HeroSection() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-t from-cream/40 via-transparent to-transparent lg:bg-gradient-to-r lg:from-cream/50 lg:via-cream/5 lg:to-transparent"
             aria-hidden
           />
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-3 px-4 pb-10 sm:gap-4 sm:px-6 sm:pb-12 lg:hidden">
+          <Button size="lg" className="min-h-11" asChild>
+            <Link href="/#props-hire">Props for Hire</Link>
+          </Button>
+          <Button size="lg" variant="outline" className="min-h-11" asChild>
+            <a
+              href={SOCIAL_LINKS.whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp
+            </a>
+          </Button>
         </div>
       </div>
     </section>
