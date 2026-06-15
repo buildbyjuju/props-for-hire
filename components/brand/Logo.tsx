@@ -8,10 +8,10 @@ type LogoProps = {
 };
 
 const variantStyles = {
-  header: "h-11 w-auto sm:h-12 md:h-14 lg:h-[4.5rem]",
-  footer: "mx-auto h-16 w-auto sm:h-[4.5rem] lg:h-[5.5rem]",
-  large: "h-28 w-auto sm:h-32",
-  default: "h-[4.5rem] w-auto",
+  header: "h-14 w-auto sm:h-16 md:h-[4.5rem] lg:h-24",
+  footer: "mx-auto h-20 w-auto sm:h-24 lg:h-28",
+  large: "h-32 w-auto sm:h-36",
+  default: "h-20 w-auto sm:h-24",
 } as const;
 
 export function Logo({ className, variant = "default" }: LogoProps) {
@@ -33,10 +33,10 @@ export function Logo({ className, variant = "default" }: LogoProps) {
         priority={variant === "header"}
         sizes={
           variant === "header"
-            ? "280px"
+            ? "320px"
             : variant === "footer"
-              ? "320px"
-              : "360px"
+              ? "360px"
+              : "400px"
         }
       />
     </Link>

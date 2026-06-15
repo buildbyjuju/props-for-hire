@@ -150,6 +150,42 @@
           "imageUrls": ["/props/neon/oh-baby.jpg"]
         }
       ]
+    },
+    {
+      "slug": "cutouts",
+      "name": "Cutouts",
+      "description": "Life-size character cutouts for playful photo moments and themed parties.",
+      "sortOrder": 5,
+      "imageUrl": "/props/cutouts/elsa.jpg",
+      "items": [
+        {
+          "slug": "elsa",
+          "name": "Elsa",
+          "description": "Life-size Elsa character cutout — perfect for Frozen-themed celebrations and photo moments.",
+          "priceCents": 2000,
+          "bondCents": 5000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/cutouts/elsa.jpg"]
+        },
+        {
+          "slug": "mickey-mouse",
+          "name": "Mickey Mouse",
+          "description": "Classic Mickey Mouse character cutout — a fun focal point for birthdays and Disney-themed events.",
+          "priceCents": 2000,
+          "bondCents": 5000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/cutouts/mickey-mouse.jpg"]
+        },
+        {
+          "slug": "olaf",
+          "name": "Olaf",
+          "description": "Cheerful Olaf character cutout — ideal for winter wonderland and Frozen party styling.",
+          "priceCents": 2000,
+          "bondCents": 5000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/cutouts/olaf.jpg"]
+        }
+      ]
     }
   ]
 }

@@ -34,6 +34,12 @@ export const CATEGORIES = [
     description: "Soft-glow script pieces for romantic, modern celebrations.",
     image: "/props/neon/light-number.jpg",
   },
+  {
+    slug: "cutouts",
+    name: "Cutouts",
+    description: "Life-size character cutouts for playful photo moments and themed parties.",
+    image: "/props/cutouts/elsa.jpg",
+  },
 ] as const;
 
 export const EVENT_TYPES = [

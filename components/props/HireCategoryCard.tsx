@@ -5,6 +5,7 @@ import {
   UtensilsCrossed,
   Sparkles,
   Layers,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon | typeof ArchIcon> = {
   "cake-plinth-and-stands": Layers,
   "table-and-buffet": UtensilsCrossed,
   "neon-signs": Heart,
+  cutouts: UserRound,
 };
 
 export function HireCategoryCard({
