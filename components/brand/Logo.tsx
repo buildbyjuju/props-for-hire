@@ -27,8 +27,8 @@ export function Logo({ className, variant = "default" }: LogoProps) {
       <Image
         src="/logo.png"
         alt="DreamScape Event"
-        width={1024}
-        height={682}
+        width={576}
+        height={1024}
         className={cn("object-contain", variantStyles[variant])}
         priority={variant === "header"}
         sizes={

@@ -51,7 +51,7 @@ export function HeroSection() {
           />
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 px-4 pb-10 sm:gap-4 sm:px-6 sm:pb-12 lg:hidden">
+        <div className="mt-4 flex flex-wrap justify-center gap-3 px-4 pb-10 sm:mt-5 sm:gap-4 sm:px-6 sm:pb-12 lg:hidden">
           <Button size="lg" className="min-h-11" asChild>
             <Link href="/#props-hire">Props for Hire</Link>
           </Button>
