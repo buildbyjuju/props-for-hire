@@ -2,11 +2,13 @@ import { format, parseISO } from "date-fns";
 import { Resend } from "resend";
 import type Stripe from "stripe";
 import {
+  FULFILLMENT_OPTIONS,
   PICKUP_ADDRESS,
   RETURN_POLICY,
   type FulfillmentMethod,
 } from "@/lib/constants";
 import { DELIVERY_FEE_CENTS, getHireWindow } from "@/lib/pricing";
+import { getBookingNotificationEmail } from "@/lib/stripe";
 import { formatPrice } from "@/lib/utils";
 
 export type BookingLineSnapshot = {
@@ -269,6 +271,128 @@ export function buildBookingConfirmationHtml({
     </div>`;
 }
 
+function getResendFromAddress() {
+  return (
+    process.env.RESEND_FROM_EMAIL ??
+    "Dreamscape Event <onboarding@resend.dev>"
+  );
+}
+
+function getFulfillmentLabel(method: FulfillmentMethod) {
+  return (
+    FULFILLMENT_OPTIONS.find((option) => option.id === method)?.label ?? method
+  );
+}
+
+function buildBookingOwnerHtml({
+  customerName,
+  customerEmail,
+  fulfillmentMethod,
+  lines,
+  deliveryAddress,
+  leaveAtDoor,
+  amountTotalCents,
+  stripeSessionId,
+}: {
+  customerName: string;
+  customerEmail: string;
+  fulfillmentMethod: FulfillmentMethod;
+  lines: BookingLineSnapshot[];
+  deliveryAddress?: string;
+  leaveAtDoor: boolean;
+  amountTotalCents?: number | null;
+  stripeSessionId: string;
+}) {
+  const isPickup = fulfillmentMethod === "pickup_bexley";
+  const fulfillmentBlock = isPickup
+    ? buildPickupHtml(lines)
+    : buildDeliveryHtml(deliveryAddress ?? "Not provided", leaveAtDoor, lines);
+
+  const totalLine =
+    amountTotalCents != null
+      ? `<p style="margin-top:16px;font-size:16px;"><strong>Total paid:</strong> ${formatPrice(amountTotalCents)}</p>`
+      : "";
+
+  return `
+    <div style="font-family:Georgia,'Times New Roman',serif;color:#2c2825;max-width:640px;line-height:1.6;">
+      <p style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#a8b5a2;">New paid booking</p>
+      <h1 style="font-size:28px;font-weight:400;margin:16px 0 8px;">${escapeHtml(customerName)}</h1>
+      <p><strong>Email:</strong> <a href="mailto:${escapeHtml(customerEmail)}">${escapeHtml(customerEmail)}</a></p>
+      <p><strong>Collection:</strong> ${escapeHtml(getFulfillmentLabel(fulfillmentMethod))}</p>
+      <p style="color:#6b6560;font-size:14px;"><strong>Stripe session:</strong> ${escapeHtml(stripeSessionId)}</p>
+
+      ${buildLineItemsHtml(lines, fulfillmentMethod)}
+      ${totalLine}
+      ${fulfillmentBlock}
+
+      <h2 style="font-size:18px;font-weight:500;margin:32px 0 12px;">Return policy</h2>
+      <p>${escapeHtml(RETURN_POLICY)}</p>
+    </div>`;
+}
+
+export async function sendBookingOwnerNotificationEmail(
+  session: Stripe.Checkout.Session,
+): Promise<boolean> {
+  const resendKey = process.env.RESEND_API_KEY;
+  const ownerEmail = getBookingNotificationEmail();
+  const customerEmail =
+    session.customer_email ??
+    session.metadata?.customerEmail ??
+    session.customer_details?.email;
+
+  if (!resendKey || !ownerEmail) {
+    console.warn(
+      "Booking owner notification skipped: missing Resend key or BOOKING_NOTIFICATION_EMAIL",
+    );
+    return false;
+  }
+
+  if (session.metadata?.ownerNotificationSent === "true") {
+    return true;
+  }
+
+  if (!customerEmail) {
+    console.warn("Booking owner notification skipped: missing customer email");
+    return false;
+  }
+
+  const customerName = session.metadata?.customerName ?? "Customer";
+  const fulfillmentMethod = (session.metadata?.fulfillmentMethod ??
+    "pickup_bexley") as FulfillmentMethod;
+  const deliveryAddress = session.metadata?.deliveryAddress;
+  const leaveAtDoor = session.metadata?.leaveAtDoor === "yes";
+  const lines = parseCartSnapshot(session.metadata);
+
+  const html = buildBookingOwnerHtml({
+    customerName,
+    customerEmail,
+    fulfillmentMethod,
+    lines,
+    deliveryAddress,
+    leaveAtDoor,
+    amountTotalCents: session.amount_total,
+    stripeSessionId: session.id,
+  });
+
+  const resend = new Resend(resendKey);
+  const totalLabel =
+    session.amount_total != null ? formatPrice(session.amount_total) : "Paid";
+  const { error } = await resend.emails.send({
+    from: getResendFromAddress(),
+    to: ownerEmail,
+    replyTo: customerEmail,
+    subject: `New booking — ${customerName} — ${totalLabel}`,
+    html,
+  });
+
+  if (error) {
+    console.error("Booking owner notification error:", error);
+    return false;
+  }
+
+  return true;
+}
+
 export async function sendBookingConfirmationEmail(
   session: Stripe.Checkout.Session,
 ): Promise<boolean> {
@@ -303,9 +427,7 @@ export async function sendBookingConfirmationEmail(
 
   const resend = new Resend(resendKey);
   const { error } = await resend.emails.send({
-    from:
-      process.env.RESEND_FROM_EMAIL ??
-      "Dreamscape Event <onboarding@resend.dev>",
+    from: getResendFromAddress(),
     to: customerEmail,
     subject: "Your DreamScape Event booking confirmation",
     html,

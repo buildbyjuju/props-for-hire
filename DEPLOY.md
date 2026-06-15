@@ -13,7 +13,7 @@ Copy `.env.example` to `.env.local` and fill in every value.
 | Service | Purpose |
 |---------|---------|
 | **Neon** | Categories, items, bookings, quote records |
-| **Stripe** | Prop hire checkout (test mode first) |
+| **Stripe** | Prop hire checkout (live mode in production) |
 | **Resend** | Quote request emails to your inbox |
 | **Vercel Blob** | Inspiration photos on quote form |
 
@@ -28,35 +28,63 @@ npm run db:seed
 
 **Important:** Online hire and checkout only work after the database is seeded. Until then, the site shows the catalogue using static data (browse only).
 
-## 4. Stripe (test mode)
+## 4. Stripe (live checkout)
 
-1. Create products/prices are created dynamically at checkout — no manual Stripe products needed.
-2. In [Stripe Dashboard → Developers → Webhooks](https://dashboard.stripe.com/test/webhooks), add endpoint:
-   - Local: use [Stripe CLI](https://stripe.com/docs/stripe-cli):  
-     `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+Checkout uses **Stripe Checkout** — customers pay on Stripe’s secure hosted page, then return to your thank-you page.
+
+### Live keys (production)
+
+1. In [Stripe Dashboard → API keys](https://dashboard.stripe.com/apikeys), copy your **live** secret key (`sk_live_...`) to `STRIPE_SECRET_KEY`.
+2. Products and prices are created automatically at checkout — no manual Stripe products needed.
+3. In [Stripe Dashboard → Webhooks (live mode)](https://dashboard.stripe.com/webhooks), add endpoint:
    - Production: `https://your-domain.com/api/webhooks/stripe`
-3. Listen for `checkout.session.completed` and `checkout.session.expired`.
-4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`.
+   - Local testing with live keys is not recommended; use test keys locally instead.
+4. Subscribe to:
+   - `checkout.session.completed`
+   - `checkout.session.expired`
+5. Copy the **live** webhook signing secret to `STRIPE_WEBHOOK_SECRET` (`whsec_...`).
 
-### Test checkout
+After a successful payment, the webhook will:
 
-1. Add a prop to cart and pick a future date.
-2. Use test card `4242 4242 4242 4242`, any future expiry, any CVC.
-3. Confirm the booking row shows `paid` in Neon and the date is unavailable on the calendar.
+- Mark bookings as **paid** in Neon
+- Email the customer a booking confirmation
+- Email you the full booking details at `BOOKING_NOTIFICATION_EMAIL` (falls back to `QUOTE_NOTIFICATION_EMAIL`)
+
+### Local development (optional test mode)
+
+For local testing only, you may use test keys (`sk_test_...`) and the [Stripe CLI](https://stripe.com/docs/stripe-cli):
+
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+
+Use test card `4242 4242 4242 4242`. **Production deployments require live keys** — test keys are rejected when `NODE_ENV=production`.
+
+### Verify checkout
+
+1. Run `npm run db:push && npm run db:seed` so hire items exist in the database.
+2. Add a prop to cart and pick a future date.
+3. Complete checkout on the live Stripe page.
+4. Confirm:
+   - Thank-you page shows your booking summary
+   - Customer receives confirmation email
+   - You receive a new-booking email
+   - The booked date is unavailable on the calendar in Neon
 
 ## 5. Resend
 
-1. Verify your domain or use `onboarding@resend.dev` for testing.
-2. Set `QUOTE_NOTIFICATION_EMAIL` to the inbox that should receive quotes.
-3. Submit the quote form on the home page with a test image.
+1. Verify your sending domain in Resend, or use `onboarding@resend.dev` for testing only.
+2. Set `RESEND_FROM_EMAIL` to your verified sender (e.g. `Dream Scape Moments <bookings@yourdomain.com>`).
+3. Set `BOOKING_NOTIFICATION_EMAIL` and `QUOTE_NOTIFICATION_EMAIL` to the inbox that should receive bookings and quote enquiries.
+4. Submit the quote form on the home page with a test image.
 
 ## 6. Vercel deploy
 
 1. Push the repo to GitHub and import in [Vercel](https://vercel.com).
-2. Add all environment variables from `.env.example` in Project Settings.
+2. Add all environment variables from `.env.example` in Project Settings — use **live** Stripe keys for production.
 3. Connect **Neon** and **Blob** integrations if available.
-4. After deploy, update `NEXT_PUBLIC_SITE_URL` to your production URL.
-5. Register the production Stripe webhook URL.
+4. After deploy, set `NEXT_PUBLIC_SITE_URL` to your production URL.
+5. Register the **live** Stripe webhook URL: `https://your-domain.com/api/webhooks/stripe`.
 
 ## 7. Your content
 

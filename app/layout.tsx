@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Jost } from "next/font/google";
 import { Toaster } from "sonner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 import { CartProvider } from "@/components/cart/CartProvider";
 import "./globals.css";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
       <body className="min-h-screen bg-warm-white antialiased">
         <CartProvider>
+          <SplashScreen />
           <Header />
           <main>{children}</main>
           <Footer />

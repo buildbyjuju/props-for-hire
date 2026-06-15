@@ -8,10 +8,10 @@ type LogoProps = {
 };
 
 const variantStyles = {
-  header: "h-14 w-auto sm:h-16 md:h-[4.5rem] lg:h-24",
-  footer: "mx-auto h-20 w-auto sm:h-24 lg:h-28",
-  large: "h-32 w-auto sm:h-36",
-  default: "h-20 w-auto sm:h-24",
+  header: "h-[4.5rem] w-auto sm:h-20 md:h-24 lg:h-32",
+  footer: "mx-auto h-24 w-auto sm:h-28 lg:h-36",
+  large: "h-36 w-auto sm:h-40",
+  default: "h-24 w-auto sm:h-28",
 } as const;
 
 export function Logo({ className, variant = "default" }: LogoProps) {
@@ -26,17 +26,17 @@ export function Logo({ className, variant = "default" }: LogoProps) {
     >
       <Image
         src="/logo.png"
-        alt="DreamScape Event"
+        alt="Dream Scape Moments"
         width={576}
         height={1024}
         className={cn("object-contain", variantStyles[variant])}
         priority={variant === "header"}
         sizes={
           variant === "header"
-            ? "320px"
+            ? "400px"
             : variant === "footer"
-              ? "360px"
-              : "400px"
+              ? "440px"
+              : "480px"
         }
       />
     </Link>

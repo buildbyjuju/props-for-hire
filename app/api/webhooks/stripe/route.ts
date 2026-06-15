@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { requireDb } from "@/lib/db";
 import { bookings } from "@/lib/db/schema";
-import { sendBookingConfirmationEmail } from "@/lib/emails/booking-confirmation";
+import { sendBookingConfirmationEmail, sendBookingOwnerNotificationEmail } from "@/lib/emails/booking-confirmation";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
@@ -46,15 +46,28 @@ export async function POST(request: Request) {
         .where(eq(bookings.stripeSessionId, session.id));
     }
 
-    if (session.metadata?.confirmationEmailSent !== "true") {
-      const sent = await sendBookingConfirmationEmail(session);
-      if (sent) {
-        await stripe.checkout.sessions.update(session.id, {
-          metadata: {
-            ...session.metadata,
-            confirmationEmailSent: "true",
-          },
-        });
+    if (session.metadata?.confirmationEmailSent !== "true" || session.metadata?.ownerNotificationSent !== "true") {
+      const metadata = { ...session.metadata };
+      let updated = false;
+
+      if (metadata.confirmationEmailSent !== "true") {
+        const customerSent = await sendBookingConfirmationEmail(session);
+        if (customerSent) {
+          metadata.confirmationEmailSent = "true";
+          updated = true;
+        }
+      }
+
+      if (metadata.ownerNotificationSent !== "true") {
+        const ownerSent = await sendBookingOwnerNotificationEmail(session);
+        if (ownerSent) {
+          metadata.ownerNotificationSent = "true";
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await stripe.checkout.sessions.update(session.id, { metadata });
       }
     }
   }
