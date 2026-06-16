@@ -48,8 +48,6 @@ export async function POST(request: Request) {
 
     const cookieStore = await cookies();
     const cart = parseCart(cookieStore.get(CART_COOKIE)?.value);
-
-        );
       }
       const available = await isDateAvailable(line.itemId, line.eventDate);
       if (!available) {
