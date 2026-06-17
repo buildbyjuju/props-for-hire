@@ -117,10 +117,10 @@ export function HireDialog({
   const totalCents = eventDateStr
     ? calculateHirePriceCents(item.priceCents, setCount)
     : null;
+  const showDateLoading = open && readyForCalendar && loadingDates;
 
   useEffect(() => {
     if (!open || !readyForCalendar) {
-      setLoadingDates(false);
       return;
     }
 
@@ -285,7 +285,7 @@ export function HireDialog({
               }}
               className="mx-auto w-full max-w-[320px] rounded-2xl bg-cream p-2"
             />
-            {loadingDates ? (
+            {showDateLoading ? (
               <p className="mt-2 text-center text-xs font-light text-foreground-soft">
                 Checking availability...
               </p>

@@ -1,19 +1,18 @@
-import { HeroSection } from "@/components/home/HeroSection";
-import { PropsSection } from "@/components/home/PropsSection";
-import { AboutSection } from "@/components/home/AboutSection";
-import { WorkSection } from "@/components/home/WorkSection";
-import { TestimonialsSection } from "@/components/home/TestimonialsSection";
-import { QuoteSection } from "@/components/home/QuoteSection";
+import type { Metadata } from "next";
+import { ComingSoonLanding } from "@/components/coming-soon/ComingSoonLanding";
+
+export const metadata: Metadata = {
+  title: "Coming Soon | Dream Scape Moments",
+  description:
+    "Something exciting is coming. Soon you'll be able to hire party props online — until then, book via Instagram and WhatsApp.",
+  openGraph: {
+    title: "Dream Scape Moments — Coming Soon",
+    description: "Luxury party props and event styling — launching soon.",
+    type: "website",
+    images: ["/logo.png"],
+  },
+};
 
 export default function HomePage() {
-  return (
-    <>
-      <HeroSection />
-      <PropsSection />
-      <AboutSection />
-      <WorkSection />
-      <TestimonialsSection />
-      <QuoteSection />
-    </>
-  );
+  return <ComingSoonLanding />;
 }

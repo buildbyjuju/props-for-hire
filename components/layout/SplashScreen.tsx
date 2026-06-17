@@ -15,7 +15,7 @@ export function SplashScreen() {
 
   useEffect(() => {
     if (sessionStorage.getItem(STORAGE_KEY)) {
-      setPhase("done");
+      queueMicrotask(() => setPhase("done"));
       return;
     }
 
@@ -25,12 +25,14 @@ export function SplashScreen() {
 
     if (reducedMotion) {
       sessionStorage.setItem(STORAGE_KEY, "1");
-      setPhase("done");
+      queueMicrotask(() => setPhase("done"));
       return;
     }
 
-    setPhase("hold");
-    document.body.style.overflow = "hidden";
+    queueMicrotask(() => {
+      setPhase("hold");
+      document.body.style.overflow = "hidden";
+    });
 
     const openTimer = window.setTimeout(() => {
       setPhase("opening");
@@ -60,7 +62,6 @@ export function SplashScreen() {
       className="fixed inset-0 z-[100] overflow-hidden"
       aria-hidden={isOpening}
     >
-      {/* Logo — centred above panels, fades in then out as doors open */}
       <div
         className={cn(
           "pointer-events-none absolute inset-0 z-[103] flex items-center justify-center transition-opacity duration-500 ease-out",
@@ -79,7 +80,6 @@ export function SplashScreen() {
         />
       </div>
 
-      {/* Left door */}
       <div
         className={cn(
           "splash-door-left absolute left-0 top-0 z-[101] h-full w-1/2 bg-cream shadow-[4px_0_24px_rgba(168,181,162,0.08)]",
@@ -88,7 +88,6 @@ export function SplashScreen() {
         aria-hidden
       />
 
-      {/* Right door */}
       <div
         className={cn(
           "splash-door-right absolute right-0 top-0 z-[101] h-full w-1/2 bg-cream shadow-[-4px_0_24px_rgba(168,181,162,0.08)]",
@@ -97,7 +96,6 @@ export function SplashScreen() {
         aria-hidden
       />
 
-      {/* Centre seam — sage accent */}
       <div
         className={cn(
           "pointer-events-none absolute left-1/2 top-0 z-[102] h-full w-px -translate-x-1/2 bg-sage/25 transition-opacity duration-300",

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { CART_COOKIE, parseCart } from "@/lib/cart";
 import { FULFILLMENT_OPTIONS, type FulfillmentMethod } from "@/lib/constants";
 import { getItemById } from "@/lib/catalog";
