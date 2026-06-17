@@ -147,7 +147,38 @@ body {
 
   .coming-soon-fade-up {
     opacity: 0;
-    animation: coming-soon-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: coming-soon-fade-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .coming-soon-page {
+    animation: coming-soon-page-in 1s ease-out;
+  }
+
+  .coming-soon-instagram-btn {
+    transition:
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.45s ease,
+      box-shadow 0.45s ease;
+  }
+
+  .coming-soon-instagram-btn:hover {
+    transform: translateY(-2px);
+    background-color: var(--sage-light);
+    box-shadow: 0 14px 40px rgba(168, 181, 162, 0.28);
+  }
+
+  .coming-soon-instagram-btn:active {
+    transform: translateY(0);
+  }
+
+  @keyframes coming-soon-page-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
 
   .coming-soon-delay-1 {
@@ -177,7 +208,7 @@ body {
   @keyframes coming-soon-fade-up {
     from {
       opacity: 0;
-      transform: translateY(14px);
+      transform: translateY(10px);
     }
 
     to {
@@ -200,9 +231,14 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .coming-soon-fade-up {
+  .coming-soon-fade-up,
+  .coming-soon-page {
     opacity: 1;
     animation: none;
+    transform: none;
+  }
+
+  .coming-soon-instagram-btn:hover {
     transform: none;
   }
 }

@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 
 const INSTAGRAM_URL = "https://instagram.com/dreamscape_event.au";
 const WHATSAPP_URL = "https://wa.me/61474973317";
-const WHATSAPP_DISPLAY = "0474 973 317";
 
 function InstagramIcon() {
   return (
@@ -44,7 +43,7 @@ function SocialIcon({
       rel="noopener noreferrer"
       aria-label={label}
       className={cn(
-        "flex h-11 w-11 items-center justify-center rounded-full border border-sage/25 bg-cream/60 text-foreground-soft transition-all duration-300 hover:border-sage/50 hover:bg-cream hover:text-sage",
+        "flex h-10 w-10 items-center justify-center rounded-full border border-sage/25 bg-cream/60 text-foreground-soft transition-all duration-300 hover:border-sage/50 hover:bg-cream hover:text-sage",
         className,
       )}
     >
@@ -55,48 +54,57 @@ function SocialIcon({
 
 export function ComingSoonLanding() {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[linear-gradient(180deg,#fffdfb_0%,#f8f5f0_45%,#f3efe8_100%)]">
+    <div className="coming-soon-page relative flex min-h-[100dvh] flex-col overflow-hidden bg-[linear-gradient(180deg,#fffdfb_0%,#f8f5f0_48%,#f3efe8_100%)]">
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-35"
         aria-hidden
         style={{
           backgroundImage:
-            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168,181,162,0.35), transparent 60%)",
+            "radial-gradient(ellipse 75% 45% at 50% 0%, rgba(168,181,162,0.32), transparent 58%)",
         }}
       />
 
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-14 sm:px-8 sm:py-20">
-        <div className="coming-soon-fade-up coming-soon-delay-1 mx-auto w-full max-w-md text-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-5 py-6 sm:max-w-lg sm:px-8 sm:py-10">
+        <div className="coming-soon-fade-up coming-soon-delay-1 w-full text-center">
           <Image
             src="/logo.png"
             alt="Dream Scape Moments"
             width={576}
             height={1024}
             priority
-            className="mx-auto h-[min(42vh,320px)] w-auto max-w-[min(72vw,240px)] object-contain sm:h-[min(38vh,360px)] sm:max-w-[280px]"
-            sizes="(max-width: 640px) 72vw, 280px"
+            className="mx-auto h-[min(26vh,200px)] w-auto max-w-[min(64vw,180px)] object-contain sm:h-[min(28vh,240px)] sm:max-w-[220px]"
+            sizes="(max-width: 640px) 64vw, 220px"
           />
+          <p className="mt-3 text-[10px] uppercase leading-relaxed tracking-[0.16em] text-foreground-soft sm:mt-3.5 sm:text-[11px] sm:tracking-[0.2em]">
+            Sydney • Party Props • Event Styling • Balloon Styling
+          </p>
         </div>
 
-        <h1 className="coming-soon-fade-up coming-soon-delay-2 mt-8 max-w-lg font-serif text-2xl font-light leading-snug text-foreground sm:mt-10 sm:text-3xl md:text-4xl">
-          ✨ Something Exciting Is Coming ✨
+        <h1 className="coming-soon-fade-up coming-soon-delay-2 mt-5 max-w-sm font-serif text-xl font-light leading-snug text-foreground sm:mt-6 sm:max-w-md sm:text-2xl md:text-3xl">
+          ✨ Something Beautiful Is Coming ✨
         </h1>
 
-        <p className="coming-soon-fade-up coming-soon-delay-3 mt-5 max-w-md text-sm font-light leading-relaxed text-foreground-soft sm:mt-6 sm:text-base">
-          Soon you&apos;ll be able to hire your party props online, check availability,
-          and plan your special event with ease.
+        <div className="coming-soon-fade-up coming-soon-delay-3 mt-4 max-w-sm space-y-2.5 text-center text-[13px] font-light leading-relaxed text-foreground-soft sm:mt-5 sm:max-w-md sm:space-y-3 sm:text-sm">
+          <p>Online bookings are launching soon.</p>
+          <p>
+            Browse our collection, check availability, and reserve your favourite
+            party props in just a few clicks.
+          </p>
+          <p>
+            Until then, we&apos;re taking bookings through Instagram and WhatsApp.
+          </p>
+        </div>
+
+        <p className="coming-soon-fade-up coming-soon-delay-4 mt-5 text-center text-[10px] uppercase tracking-[0.14em] text-sage sm:mt-6 sm:text-[11px] sm:tracking-[0.18em]">
+          Taking bookings now via Instagram &amp; WhatsApp
         </p>
 
-        <p className="coming-soon-fade-up coming-soon-delay-4 mt-4 max-w-md text-sm font-light leading-relaxed text-foreground-soft sm:text-base">
-          Until then, we&apos;re still taking bookings through Instagram and WhatsApp.
-        </p>
-
-        <div className="coming-soon-fade-up coming-soon-delay-5 mt-10 flex w-full max-w-sm flex-col gap-3 sm:mt-12 sm:max-w-md sm:gap-4">
+        <div className="coming-soon-fade-up coming-soon-delay-5 mt-4 flex w-full flex-col gap-2.5 sm:mt-5 sm:gap-3">
           <Link
             href={INSTAGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-sage px-6 py-3 text-sm font-light tracking-[0.1em] text-black shadow-luxury transition-all duration-300 hover:bg-sage-light hover:shadow-luxury-hover"
+            className="coming-soon-instagram-btn inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-sage px-5 py-2.5 text-xs font-light tracking-[0.12em] text-black shadow-luxury sm:min-h-12 sm:text-sm sm:tracking-[0.14em]"
           >
             <span aria-hidden>📸</span>
             Follow Us on Instagram
@@ -106,21 +114,16 @@ export function ComingSoonLanding() {
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-12 w-full flex-col items-center justify-center gap-0.5 rounded-full border border-sage/40 bg-cream/80 px-6 py-3 text-sm font-light tracking-[0.08em] text-foreground transition-all duration-300 hover:border-sage hover:bg-cream"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-sage/40 bg-cream/80 px-5 py-2.5 text-xs font-light tracking-[0.1em] text-foreground transition-all duration-300 hover:border-sage hover:bg-cream sm:min-h-12 sm:text-sm"
           >
-            <span className="inline-flex items-center gap-2">
-              <span aria-hidden>💬</span>
-              Book via WhatsApp
-            </span>
-            <span className="text-xs tracking-wider text-foreground-soft">
-              {WHATSAPP_DISPLAY}
-            </span>
+            <span aria-hidden>💬</span>
+            Book via WhatsApp
           </Link>
         </div>
       </div>
 
-      <footer className="coming-soon-fade-up coming-soon-delay-6 relative z-10 px-5 pb-10 pt-4 text-center sm:pb-14">
-        <div className="flex items-center justify-center gap-4 sm:gap-5">
+      <footer className="coming-soon-fade-up coming-soon-delay-6 relative z-10 px-5 pb-6 pt-2 text-center sm:pb-8">
+        <div className="flex items-center justify-center gap-3.5 sm:gap-4">
           <SocialIcon href={INSTAGRAM_URL} label="Instagram">
             <InstagramIcon />
           </SocialIcon>
@@ -139,7 +142,7 @@ export function ComingSoonLanding() {
           ) : null}
         </div>
 
-        <p className="mt-6 text-xs uppercase tracking-[0.2em] text-foreground-soft sm:mt-8">
+        <p className="mt-4 text-[10px] uppercase tracking-[0.18em] text-foreground-soft sm:mt-5 sm:text-xs sm:tracking-[0.2em]">
           Launching Soon 🤍
         </p>
       </footer>
