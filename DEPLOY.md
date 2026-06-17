@@ -10,8 +10,9 @@ npm install
 
 Copy `.env.example` to `.env.local` and fill in every value.
 
-| Service | Purpose |
+| Variable | Purpose |
 |---------|---------|
+| **COMING_SOON** | Set to `true` to show the Coming Soon landing page and hide the full site |
 | **Neon** | Categories, items, bookings, quote records |
 | **Stripe** | Prop hire checkout (live mode in production) |
 | **Resend** | Quote request emails to your inbox |

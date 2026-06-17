@@ -52,7 +52,9 @@ export const EVENT_TYPES = [
 ] as const;
 
 export const SOCIAL_LINKS = {
-  instagram: process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? "https://instagram.com",
+  instagram:
+    process.env.NEXT_PUBLIC_INSTAGRAM_URL ??
+    "https://instagram.com/dreamscape_event.au",
   facebook: process.env.NEXT_PUBLIC_FACEBOOK_URL ?? "https://facebook.com",
   tiktok: process.env.NEXT_PUBLIC_TIKTOK_URL ?? "https://tiktok.com",
   whatsapp: "https://wa.me/61474973317",

@@ -48,6 +48,20 @@ export async function POST(request: Request) {
 
     const cookieStore = await cookies();
     const cart = parseCart(cookieStore.get(CART_COOKIE)?.value);
+
+    if (cart.length === 0) {
+      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    }
+
+    for (const line of cart) {
+      if (line.itemId.startsWith("static-")) {
+        return NextResponse.json(
+          {
+            error:
+              "Database not seeded. Run npm run db:push && npm run db:seed before checkout.",
+          },
+          { status: 400 },
+        );
       }
       const available = await isDateAvailable(line.itemId, line.eventDate);
       if (!available) {
