@@ -20,7 +20,11 @@ export function CategoryCard({
           src={image}
           alt={name}
           fill
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+          className={
+            slug === "cutouts"
+              ? "object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              : "object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+          }
           sizes="(max-width: 768px) 100vw, 50vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-cream/40 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />

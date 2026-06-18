@@ -45,6 +45,30 @@ export function calculateHirePriceCents(
   return basePriceCents * setCount;
 }
 
+export function getVariantPriceCents(
+  item: {
+    priceCents: number;
+    variantPrices?: Record<string, number>;
+  },
+  variant?: string,
+  setCount = 1,
+): number {
+  if (variant && item.variantPrices?.[variant]) {
+    return item.variantPrices[variant];
+  }
+  return calculateHirePriceCents(item.priceCents, setCount);
+}
+
+export function formatVariantPriceRange(variantPrices: Record<string, number>): string {
+  const amounts = Object.values(variantPrices).sort((a, b) => a - b);
+  const low = amounts[0];
+  const high = amounts[amounts.length - 1];
+  if (low === high) {
+    return formatHirePriceSummary(low);
+  }
+  return `${formatPrice(low)} – ${formatPrice(high)} per hire`;
+}
+
 export function formatHirePriceSummary(priceCents: number, perSet = false): string {
   const amount = formatPrice(priceCents);
   return perSet ? `${amount} per set` : `${amount} per hire`;

@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
 import { QuoteForm } from "@/components/quote/QuoteForm";
 
@@ -32,6 +34,16 @@ export function QuoteSection() {
               sizes="50vw"
             />
           </div>
+        </div>
+
+        <div className="mt-3 flex justify-center lg:hidden">
+          <Link
+            href="/party-setups"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-sage/30 text-sage transition-colors hover:border-sage hover:bg-sage/10"
+            aria-label="What we offer for party setups"
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+          </Link>
         </div>
 
         <div className="mt-6 lg:mt-12 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">

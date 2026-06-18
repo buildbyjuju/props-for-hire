@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns";
 import { useCart } from "@/components/cart/CartProvider";
 import { cartLineKey, cartBondTotal, cartHireTotal } from "@/lib/cart";
 import {
+  BOND_REFUND_NOTICE,
   DELIVERY_LEAVE_AT_DOOR_LABEL,
   DELIVERY_WINDOW_NOTICE,
   FULFILLMENT_OPTIONS,
@@ -23,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export default function CartPage() {
-  const { cart, removeLine, totalCents, clearCart, isLoading } = useCart();
+  const { cart, removeLine, totalCents, isLoading } = useCart();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<
@@ -77,7 +78,6 @@ export default function CartPage() {
         return;
       }
       if (data.url) {
-        clearCart();
         window.location.href = data.url;
       }
     } catch {
@@ -148,11 +148,11 @@ export default function CartPage() {
                         </p>
                       )}
                       <p className="mt-2 font-serif text-sage">
-                        Hire: {formatPrice(line.priceCents)}
+                        Hire fee: {formatPrice(line.priceCents)}
                       </p>
                       {line.bondCents ? (
                         <p className="text-xs font-light text-foreground-soft">
-                          Bond (refundable): {formatPrice(line.bondCents)}
+                          Refundable bond: {formatPrice(line.bondCents)}
                         </p>
                       ) : null}
                     </div>
@@ -203,21 +203,33 @@ export default function CartPage() {
                   Collection or delivery
                 </legend>
                 <div className="flex flex-wrap gap-2">
-                  {FULFILLMENT_OPTIONS.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => handleFulfillmentChange(option.id)}
-                      className={cn(
-                        "min-h-11 rounded-full border px-4 py-2.5 text-xs uppercase tracking-wider transition-colors",
-                        fulfillmentMethod === option.id
-                          ? "border-sage bg-sage text-black"
-                          : "border-sage/30 bg-warm-white text-foreground hover:border-sage",
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                  {FULFILLMENT_OPTIONS.map((option) => {
+                    const isDeliveryOption = option.id === "delivery";
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        disabled={isDeliveryOption}
+                        onClick={() => handleFulfillmentChange(option.id)}
+                        className={cn(
+                          "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-xs uppercase tracking-wider transition-colors",
+                          isDeliveryOption
+                            ? "cursor-not-allowed border-sage/20 bg-cream text-foreground-soft"
+                            : fulfillmentMethod === option.id
+                              ? "border-sage bg-sage text-black"
+                              : "border-sage/30 bg-warm-white text-foreground hover:border-sage",
+                        )}
+                      >
+                        {option.label}
+                        {isDeliveryOption ? (
+                          <span className="text-[10px] font-light normal-case tracking-normal">
+                            Coming soon
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
                 {fulfillmentMethod === "pickup_bexley" ? (
                   <p className="text-xs font-light leading-relaxed text-foreground-soft">
@@ -257,23 +269,35 @@ export default function CartPage() {
               </fieldset>
 
               <div className="rounded-2xl bg-warm-white px-4 py-4 text-center sm:px-6 sm:py-5">
-                {bondTotal > 0 || deliveryFee > 0 ? (
-                  <div className="space-y-1 text-sm font-light text-foreground-soft">
-                    <p>Hire: {formatPrice(hireTotal)}</p>
-                    {bondTotal > 0 ? (
-                      <p>Refundable bond: {formatPrice(bondTotal)}</p>
-                    ) : null}
-                    {deliveryFee > 0 ? (
-                      <p>Delivery fee: {formatPrice(deliveryFee)}</p>
-                    ) : null}
+                <div className="space-y-2 text-sm font-light text-foreground-soft">
+                  <div className="flex justify-between gap-4">
+                    <span>Hire fees</span>
+                    <span className="text-foreground">{formatPrice(hireTotal)}</span>
                   </div>
-                ) : null}
-                <p className="mt-3 text-xs uppercase tracking-luxury text-foreground-soft">
-                  Total due
+                  {bondTotal > 0 ? (
+                    <div className="flex justify-between gap-4">
+                      <span>Refundable bonds</span>
+                      <span className="text-foreground">{formatPrice(bondTotal)}</span>
+                    </div>
+                  ) : null}
+                  {deliveryFee > 0 ? (
+                    <div className="flex justify-between gap-4">
+                      <span>Delivery fee</span>
+                      <span className="text-foreground">{formatPrice(deliveryFee)}</span>
+                    </div>
+                  ) : null}
+                </div>
+                <p className="mt-4 text-xs uppercase tracking-luxury text-foreground-soft">
+                  Total due at checkout
                 </p>
                 <p className="mt-2 font-serif text-2xl font-light text-foreground sm:text-3xl">
                   {formatPrice(checkoutTotal)}
                 </p>
+                {bondTotal > 0 ? (
+                  <p className="mt-3 text-left text-xs font-light leading-relaxed text-foreground-soft">
+                    {BOND_REFUND_NOTICE}
+                  </p>
+                ) : null}
               </div>
 
               <Button
@@ -282,7 +306,7 @@ export default function CartPage() {
                 className="w-full"
                 disabled={checkingOut || !fulfillmentMethod}
               >
-                {checkingOut ? "Redirecting..." : "Proceed to payment"}
+                {checkingOut ? "Redirecting..." : "Proceed to secure payment"}
               </Button>
             </form>
           </div>

@@ -5,9 +5,14 @@ export function isStripeLiveMode() {
   return key.startsWith("sk_live_");
 }
 
+export function getStripePublishableKey(): string | null {
+  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
+  return key || null;
+}
+
 export function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
+  if (!key?.trim()) {
     throw new Error("STRIPE_SECRET_KEY is not configured");
   }
 
@@ -17,7 +22,20 @@ export function getStripe() {
     );
   }
 
-  return new Stripe(key);
+  return new Stripe(key.trim());
+}
+
+export function getStripeConfigError(): string | null {
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return "Payments are not set up yet. Add STRIPE_SECRET_KEY to your environment variables.";
+  }
+
+  const key = process.env.STRIPE_SECRET_KEY.trim();
+  if (process.env.NODE_ENV === "production" && key.startsWith("sk_test_")) {
+    return "Production requires live Stripe keys (sk_live_...).";
+  }
+
+  return null;
 }
 
 export function getSiteUrl() {

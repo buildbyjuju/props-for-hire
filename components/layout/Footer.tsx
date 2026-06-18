@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { SOCIAL_LINKS } from "@/lib/constants";
+import { homeSectionLink } from "@/lib/site-home";
 
 export function Footer() {
   return (
@@ -12,7 +13,7 @@ export function Footer() {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-5 sm:mt-8 sm:gap-8">
           <Link
-            href="/#props-hire"
+            href={homeSectionLink("props-hire")}
             className="text-xs uppercase tracking-luxury text-foreground-soft hover:text-sage"
           >
             Props for Hire

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { homeSectionLink } from "@/lib/site-home";
 
 const HIGHLIGHTS = [
   "Curated props for hire",
@@ -46,7 +47,7 @@ export function AboutSection() {
             </ul>
             <div className="mt-8 hidden flex-wrap justify-start gap-3 sm:gap-4 lg:mt-10 lg:flex">
               <Button size="lg" variant="outline" className="min-h-11" asChild>
-                <Link href="/#gallery">View our gallery</Link>
+                <Link href={homeSectionLink("gallery")}>View our gallery</Link>
               </Button>
               <Button size="lg" className="min-h-11" asChild>
                 <Link href="/props">Browse props</Link>
@@ -66,7 +67,7 @@ export function AboutSection() {
 
           <div className="mt-4 flex flex-nowrap justify-center gap-3 px-4 sm:mt-5 sm:gap-4 sm:px-6 lg:hidden">
             <Button size="sm" variant="outline" className="min-h-11 shrink-0 whitespace-nowrap px-4 sm:px-5" asChild>
-              <Link href="/#gallery">View gallery</Link>
+              <Link href={homeSectionLink("gallery")}>View gallery</Link>
             </Button>
             <Button size="sm" className="min-h-11 shrink-0 whitespace-nowrap px-4 sm:px-5" asChild>
               <Link href="/props">Browse props</Link>

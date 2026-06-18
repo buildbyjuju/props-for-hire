@@ -12,6 +12,7 @@ import { relations } from "drizzle-orm";
 
 export const bookingStatusEnum = pgEnum("booking_status", [
   "pending",
+  "pending_confirmation",
   "paid",
   "cancelled",
 ]);
@@ -51,6 +52,21 @@ export const bookings = pgTable("bookings", {
   stripeSessionId: text("stripe_session_id"),
   customerEmail: text("customer_email"),
   customerName: text("customer_name"),
+  selectedSize: text("selected_size"),
+  selectedSets: text("selected_sets"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const dateBlocks = pgTable("date_blocks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  itemId: uuid("item_id")
+    .notNull()
+    .references(() => items.id, { onDelete: "cascade" }),
+  eventDate: date("event_date").notNull(),
+  selectedSize: text("selected_size"),
+  selectedSets: text("selected_sets"),
+  note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -89,4 +105,5 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
 export type Category = typeof categories.$inferSelect;
 export type Item = typeof items.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
+export type DateBlock = typeof dateBlocks.$inferSelect;
 export type QuoteRequest = typeof quoteRequests.$inferSelect;

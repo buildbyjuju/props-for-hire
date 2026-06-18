@@ -13,6 +13,7 @@ Copy `.env.example` to `.env.local` and fill in every value.
 | Variable | Purpose |
 |---------|---------|
 | **Neon** | Categories, items, bookings, quote records |
+| **ADMIN_PASSWORD** | Password for the hidden `/admin` dashboard |
 | **Stripe** | Prop hire checkout (live mode in production) |
 | **Resend** | Quote request emails to your inbox |
 | **Vercel Blob** | Inspiration photos on quote form |
@@ -86,7 +87,14 @@ Use test card `4242 4242 4242 4242`. **Production deployments require live keys*
 4. After deploy, set `NEXT_PUBLIC_SITE_URL` to your production URL.
 5. Register the **live** Stripe webhook URL: `https://your-domain.com/api/webhooks/stripe`.
 
-## 7. Your content
+## 7. Admin dashboard
+
+1. Set `ADMIN_PASSWORD` in `.env.local` (and Vercel for production).
+2. Run `npm run db:push` to add the `notes` column and `date_blocks` table.
+3. Visit `/admin` directly — it is not linked anywhere on the public site.
+4. Sign in with your password to manage bookings, block dates, and add notes.
+
+## 8. Your content
 
 - **Props:** Edit [`data/items.json`](data/items.json), add images under `public/props/`, run `npm run db:seed`.
 - **Portfolio:** Update images in [`components/home/WorkSection.tsx`](components/home/WorkSection.tsx).

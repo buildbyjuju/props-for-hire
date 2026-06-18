@@ -30,6 +30,24 @@
           "priceCents": 5000,
           "quantityAvailable": 1,
           "imageUrls": ["/props/backdrops/arch-backdrop.jpg"]
+        },
+        {
+          "slug": "arch-cover",
+          "name": "Arch Cover",
+          "description": "Elegant arch cover in your choice of colour — styled over our arch backdrop or on its own.",
+          "priceCents": 1500,
+          "bondCents": 3000,
+          "quantityAvailable": 4,
+          "imageUrls": ["/props/backdrops/arch-cover/white.jpg"],
+          "sizes": ["White", "Light blue", "Light pink", "Black"],
+          "selectionLabel": "Choose colour",
+          "selectionDisplay": "Colour",
+          "colorImages": {
+            "White": "/props/backdrops/arch-cover/white.jpg",
+            "Light blue": "/props/backdrops/arch-cover/light-blue.jpg",
+            "Light pink": "/props/backdrops/arch-cover/light-pink.jpg",
+            "Black": "/props/backdrops/arch-cover/black.jpg"
+          }
         }
       ]
     },
@@ -97,20 +115,22 @@
           "setOptions": ["1 set", "2 sets"]
         },
         {
-          "slug": "long-table-styling",
-          "name": "Long Table Styling",
-          "description": "Full long-table setup with linens, runners, centrepieces, and place settings.",
-          "priceCents": 45000,
-          "quantityAvailable": 2,
-          "imageUrls": ["/hero.jpg"]
+          "slug": "food-warmer-set-of-4",
+          "name": "Food Warmer — Set of 4",
+          "description": "Hire four stainless steel chafing dishes to keep buffet food warm throughout your event.",
+          "priceCents": 8000,
+          "bondCents": 15000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/food-raisers/set-of-4.jpg"]
         },
         {
-          "slug": "buffet-display-setup",
-          "name": "Buffet Display Setup",
-          "description": "Styled buffet table with plinths, tiers, and coordinated décor.",
-          "priceCents": 38000,
+          "slug": "food-warmer-set-of-6",
+          "name": "Food Warmer — Set of 6",
+          "description": "Hire six stainless steel chafing dishes to keep buffet food warm throughout your event.",
+          "priceCents": 13000,
+          "bondCents": 15000,
           "quantityAvailable": 1,
-          "imageUrls": ["/hero.jpg"]
+          "imageUrls": ["/props/food-raisers/set-of-6.jpg"]
         }
       ]
     },
@@ -148,6 +168,26 @@
           "priceCents": 3000,
           "quantityAvailable": 1,
           "imageUrls": ["/props/neon/oh-baby.jpg"]
+        }
+      ]
+    },
+    {
+      "slug": "event-furniture-and-marquees",
+      "name": "Event Furniture & Marquees",
+      "description": "Premium furniture and marquee hire for outdoor celebrations and styled event spaces.",
+      "sortOrder": 6,
+      "imageUrl": "/props/marquees/marqees.jpeg",
+      "items": [
+        {
+          "slug": "marquees",
+          "name": "Marquees",
+          "description": "Elegant white marquee hire — choose your footprint for garden parties, receptions, and outdoor events.",
+          "priceCents": 5000,
+          "quantityAvailable": 2,
+          "imageUrls": ["/props/marquees/marqees.jpeg"],
+          "sizes": ["3m x 3m", "3m x 6m"],
+          "selectionLabel": "Choose size",
+          "selectionDisplay": "Size"
         }
       ]
     },

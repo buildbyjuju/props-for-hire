@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { eq, inArray } from "drizzle-orm";
-import { requireDb } from "@/lib/db";
-import { bookings } from "@/lib/db/schema";
-import { sendBookingConfirmationEmail, sendBookingOwnerNotificationEmail } from "@/lib/emails/booking-confirmation";
+import {
+  cancelExpiredCheckoutSession,
+  fulfillPaidCheckoutSession,
+} from "@/lib/checkout-fulfillment";
 import { getStripe } from "@/lib/stripe";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -27,67 +30,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const database = requireDb();
-
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const bookingIds =
-      session.metadata?.bookingIds?.split(",").filter(Boolean) ?? [];
+    const result = await fulfillPaidCheckoutSession(session);
 
-    if (bookingIds.length > 0) {
-      await database
-        .update(bookings)
-        .set({ status: "paid" })
-        .where(inArray(bookings.id, bookingIds));
-    } else if (session.id) {
-      await database
-        .update(bookings)
-        .set({ status: "paid" })
-        .where(eq(bookings.stripeSessionId, session.id));
-    }
-
-    if (session.metadata?.confirmationEmailSent !== "true" || session.metadata?.ownerNotificationSent !== "true") {
-      const metadata = { ...session.metadata };
-      let updated = false;
-
-      if (metadata.confirmationEmailSent !== "true") {
-        const customerSent = await sendBookingConfirmationEmail(session);
-        if (customerSent) {
-          metadata.confirmationEmailSent = "true";
-          updated = true;
-        }
-      }
-
-      if (metadata.ownerNotificationSent !== "true") {
-        const ownerSent = await sendBookingOwnerNotificationEmail(session);
-        if (ownerSent) {
-          metadata.ownerNotificationSent = "true";
-          updated = true;
-        }
-      }
-
-      if (updated) {
-        await stripe.checkout.sessions.update(session.id, { metadata });
-      }
+    if (result.fulfilled && result.metadataUpdated) {
+      await stripe.checkout.sessions.update(session.id, {
+        metadata: result.metadata,
+      });
     }
   }
 
   if (event.type === "checkout.session.expired") {
-    const session = event.data.object;
-    const bookingIds =
-      session.metadata?.bookingIds?.split(",").filter(Boolean) ?? [];
-
-    if (bookingIds.length > 0) {
-      await database
-        .update(bookings)
-        .set({ status: "cancelled" })
-        .where(inArray(bookings.id, bookingIds));
-    } else if (session.id) {
-      await database
-        .update(bookings)
-        .set({ status: "cancelled" })
-        .where(eq(bookings.stripeSessionId, session.id));
-    }
+    await cancelExpiredCheckoutSession(event.data.object);
   }
 
   return NextResponse.json({ received: true });

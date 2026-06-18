@@ -6,18 +6,38 @@ import {
   parseISO,
   startOfDay,
 } from "date-fns";
+import { getItemById } from "@/lib/catalog";
 import { requireDb } from "@/lib/db";
-import { bookings, items } from "@/lib/db/schema";
+import { bookings, dateBlocks, items } from "@/lib/db/schema";
+import {
+  getBlockUnits,
+  getRequestedUnits,
+  getReservationUnits,
+  itemUsesPerSizeInventory,
+  itemUsesSetInventory,
+  reservationAppliesToSize,
+  type BookingReservation,
+} from "@/lib/inventory";
 import {
   PICKUP_DAYS_BEFORE_EVENT,
   RETURN_DAYS_AFTER_EVENT,
 } from "@/lib/pricing";
 
-/** Paid bookings lock the calendar (event day + day before + day after) for that item only */
-const CALENDAR_LOCK_STATUSES = ["paid"] as const;
+/** Confirmed and paid bookings lock the calendar (event day + day before + day after) */
+const CALENDAR_LOCK_STATUSES = ["paid", "pending_confirmation"] as const;
 
 /** Pending checkout sessions also reserve dates so two people cannot pay for the same slot */
-const CHECKOUT_RESERVATION_STATUSES = ["pending", "paid"] as const;
+const CHECKOUT_RESERVATION_STATUSES = [
+  "pending",
+  "pending_confirmation",
+  "paid",
+] as const;
+
+export type AvailabilityOptions = {
+  includePendingReservations?: boolean;
+  selectedSize?: string;
+  selectedSets?: string;
+};
 
 /** Pickup, event, and return days for a booking on this event date */
 export function getBlockedDaysForEvent(eventDateStr: string): string[] {
@@ -65,6 +85,73 @@ export function getUnavailableEventDates(
   return unavailable;
 }
 
+function getUnavailableForSetInventory(
+  from: Date,
+  to: Date,
+  reservations: BookingReservation[],
+  manualBlocks: BookingReservation[],
+  quantityAvailable: number,
+  requestedSets: number,
+  item: { setOptions?: string[] },
+) {
+  const unavailable: string[] = [];
+
+  for (const day of eachDayOfInterval({ start: from, end: to })) {
+    const eventStr = format(day, "yyyy-MM-dd");
+
+    let usedUnits = reservations
+      .filter((reservation) => eventWindowsOverlap(eventStr, reservation.eventDate))
+      .reduce(
+        (sum, reservation) =>
+          sum + getReservationUnits(item, reservation.selectedSize, reservation.selectedSets),
+        0,
+      );
+
+    usedUnits += manualBlocks
+      .filter((block) => eventWindowsOverlap(eventStr, block.eventDate))
+      .reduce(
+        (sum, block) => sum + getBlockUnits(item, block, quantityAvailable),
+        0,
+      );
+
+    if (usedUnits + requestedSets > quantityAvailable) {
+      unavailable.push(eventStr);
+    }
+  }
+
+  return unavailable;
+}
+
+function getUnavailableForSizedItem(
+  from: Date,
+  to: Date,
+  reservations: BookingReservation[],
+  manualBlocks: BookingReservation[],
+  selectedSize: string,
+  item: { sizes?: string[] },
+) {
+  const relevant = [...reservations, ...manualBlocks].filter((entry) =>
+    reservationAppliesToSize(entry, selectedSize, item),
+  );
+
+  return getUnavailableEventDates(
+    from,
+    to,
+    relevant.map((entry) => entry.eventDate),
+    1,
+  );
+}
+
+function getLockedForReservations(reservations: BookingReservation[]): string[] {
+  const locked = new Set<string>();
+  for (const reservation of reservations) {
+    for (const day of getBlockedDaysForEvent(reservation.eventDate)) {
+      locked.add(day);
+    }
+  }
+  return Array.from(locked).sort();
+}
+
 /** All calendar days locked by existing bookings (day before, event, day after) */
 export function getLockedCalendarDates(existingEventDates: string[]): string[] {
   const locked = new Set<string>();
@@ -76,12 +163,14 @@ export function getLockedCalendarDates(existingEventDates: string[]): string[] {
   return Array.from(locked).sort();
 }
 
-async function getActiveBookingEventDates(
+async function getActiveBookingReservations(
   itemId: string,
   from: Date,
   to: Date,
-  statuses: readonly ("pending" | "paid")[] = CALENDAR_LOCK_STATUSES,
-): Promise<string[]> {
+  statuses: readonly (
+    "pending" | "pending_confirmation" | "paid"
+  )[] = CALENDAR_LOCK_STATUSES,
+): Promise<BookingReservation[]> {
   const database = requireDb();
   const queryFrom = format(
     addDays(from, -RETURN_DAYS_AFTER_EVENT),
@@ -90,7 +179,11 @@ async function getActiveBookingEventDates(
   const queryTo = format(addDays(to, PICKUP_DAYS_BEFORE_EVENT), "yyyy-MM-dd");
 
   const rows = await database
-    .select({ eventDate: bookings.eventDate })
+    .select({
+      eventDate: bookings.eventDate,
+      selectedSize: bookings.selectedSize,
+      selectedSets: bookings.selectedSets,
+    })
     .from(bookings)
     .where(
       and(
@@ -101,11 +194,51 @@ async function getActiveBookingEventDates(
       ),
     );
 
-  return rows.map((row) =>
-    typeof row.eventDate === "string"
-      ? row.eventDate
-      : format(row.eventDate, "yyyy-MM-dd"),
+  return rows.map((row) => ({
+    eventDate:
+      typeof row.eventDate === "string"
+        ? row.eventDate
+        : format(row.eventDate, "yyyy-MM-dd"),
+    selectedSize: row.selectedSize,
+    selectedSets: row.selectedSets,
+  }));
+}
+
+async function getManualBlockReservations(
+  itemId: string,
+  from: Date,
+  to: Date,
+): Promise<BookingReservation[]> {
+  const database = requireDb();
+  const queryFrom = format(
+    addDays(from, -RETURN_DAYS_AFTER_EVENT),
+    "yyyy-MM-dd",
   );
+  const queryTo = format(addDays(to, PICKUP_DAYS_BEFORE_EVENT), "yyyy-MM-dd");
+
+  const rows = await database
+    .select({
+      eventDate: dateBlocks.eventDate,
+      selectedSize: dateBlocks.selectedSize,
+      selectedSets: dateBlocks.selectedSets,
+    })
+    .from(dateBlocks)
+    .where(
+      and(
+        eq(dateBlocks.itemId, itemId),
+        gte(dateBlocks.eventDate, queryFrom),
+        lte(dateBlocks.eventDate, queryTo),
+      ),
+    );
+
+  return rows.map((row) => ({
+    eventDate:
+      typeof row.eventDate === "string"
+        ? row.eventDate
+        : format(row.eventDate, "yyyy-MM-dd"),
+    selectedSize: row.selectedSize,
+    selectedSets: row.selectedSets,
+  }));
 }
 
 export type ItemAvailability = {
@@ -119,9 +252,10 @@ export async function getItemAvailability(
   itemId: string,
   from: Date,
   to: Date,
-  options?: { includePendingReservations?: boolean },
+  options?: AvailabilityOptions,
 ): Promise<ItemAvailability> {
   const database = requireDb();
+  const catalogItem = await getItemById(itemId);
 
   const [item] = await database
     .select()
@@ -129,7 +263,7 @@ export async function getItemAvailability(
     .where(eq(items.id, itemId))
     .limit(1);
 
-  if (!item) {
+  if (!item || !catalogItem) {
     return { unavailable: [], locked: [] };
   }
 
@@ -137,21 +271,70 @@ export async function getItemAvailability(
     ? CHECKOUT_RESERVATION_STATUSES
     : CALENDAR_LOCK_STATUSES;
 
-  const existingEventDates = await getActiveBookingEventDates(
+  const reservations = await getActiveBookingReservations(
     itemId,
     from,
     to,
     statuses,
   );
-  const locked = getLockedCalendarDates(existingEventDates);
-  const unavailable = getUnavailableEventDates(
-    from,
-    to,
-    existingEventDates,
-    item.quantityAvailable,
-  );
+  const manualBlocks = await getManualBlockReservations(itemId, from, to);
 
-  return { unavailable, locked };
+  let unavailable: string[] = [];
+  let lockedReservations = [...reservations, ...manualBlocks];
+
+  if (itemUsesSetInventory(catalogItem) && options?.selectedSets) {
+    const requestedSets = getRequestedUnits(
+      catalogItem,
+      options.selectedSize,
+      options.selectedSets,
+    );
+    unavailable = getUnavailableForSetInventory(
+      from,
+      to,
+      reservations,
+      manualBlocks,
+      item.quantityAvailable,
+      requestedSets,
+      catalogItem,
+    );
+  } else if (itemUsesPerSizeInventory(catalogItem) && options?.selectedSize) {
+    unavailable = getUnavailableForSizedItem(
+      from,
+      to,
+      reservations,
+      manualBlocks,
+      options.selectedSize,
+      catalogItem,
+    );
+    lockedReservations = [...reservations, ...manualBlocks].filter((entry) =>
+      reservationAppliesToSize(entry, options.selectedSize!, catalogItem),
+    );
+  } else {
+    const fullBlockDates = manualBlocks
+      .filter((block) => !block.selectedSize && !block.selectedSets)
+      .map((block) => block.eventDate);
+    const bookingEventDates = [
+      ...reservations.map((reservation) => reservation.eventDate),
+      ...fullBlockDates,
+    ];
+    unavailable = getUnavailableEventDates(
+      from,
+      to,
+      bookingEventDates,
+      item.quantityAvailable,
+    );
+    lockedReservations = [
+      ...reservations,
+      ...manualBlocks.filter((block) => !block.selectedSize && !block.selectedSets),
+    ];
+  }
+
+  const locked = getLockedForReservations(lockedReservations);
+
+  return {
+    unavailable,
+    locked: [...new Set(locked)].sort(),
+  };
 }
 
 /** @deprecated Use getItemAvailability */
@@ -167,10 +350,23 @@ export async function getUnavailableDates(
 export async function isDateAvailable(
   itemId: string,
   dateStr: string,
+  options?: Pick<AvailabilityOptions, "selectedSize" | "selectedSets">,
 ): Promise<boolean> {
   const date = parseISO(dateStr);
+  const catalogItem = await getItemById(itemId);
+
+  if (catalogItem && itemUsesPerSizeInventory(catalogItem) && !options?.selectedSize) {
+    return false;
+  }
+
+  if (catalogItem && itemUsesSetInventory(catalogItem) && !options?.selectedSets) {
+    return false;
+  }
+
   const { unavailable } = await getItemAvailability(itemId, date, date, {
     includePendingReservations: true,
+    selectedSize: options?.selectedSize,
+    selectedSets: options?.selectedSets,
   });
   return !unavailable.includes(dateStr);
 }

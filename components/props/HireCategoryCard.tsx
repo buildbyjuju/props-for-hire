@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import {
   Heart,
   UtensilsCrossed,
   Sparkles,
   Layers,
   UserRound,
+  Tent,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +33,12 @@ const CATEGORY_ICONS: Record<string, LucideIcon | typeof ArchIcon> = {
   "table-and-buffet": UtensilsCrossed,
   "neon-signs": Heart,
   cutouts: UserRound,
+  "event-furniture-and-marquees": Tent,
+};
+
+const CATEGORY_IMAGE_CLASS: Record<string, string> = {
+  cutouts: "object-cover object-top",
+  "event-furniture-and-marquees": "object-contain bg-white p-2",
 };
 
 export function HireCategoryCard({
@@ -45,14 +53,20 @@ export function HireCategoryCard({
   const Icon = CATEGORY_ICONS[slug] ?? Sparkles;
 
   return (
-    <Link href={`/props/${slug}`} className="group block h-full">
-      <article className="flex h-full flex-col overflow-hidden rounded-2xl bg-warm-white shadow-luxury transition-shadow duration-300 group-hover:shadow-luxury-hover">
+    <Link
+      href={`/props/${slug}`}
+      className="group block h-full cursor-pointer rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
+    >
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl bg-warm-white shadow-luxury transition-shadow duration-300 group-hover:shadow-luxury-hover group-active:scale-[0.99]">
         <div className="relative aspect-[4/3] overflow-hidden">
           <Image
             src={image}
             alt={name}
             fill
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            className={cn(
+              "transition-transform duration-700 ease-out group-hover:scale-[1.03]",
+              CATEGORY_IMAGE_CLASS[slug] ?? "object-cover",
+            )}
             sizes="260px"
           />
         </div>

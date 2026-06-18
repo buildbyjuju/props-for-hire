@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { inArray } from "drizzle-orm";
-import { CART_COOKIE, parseCart } from "@/lib/cart";
+import { CART_COOKIE, parseCart, cartHireTotal, cartBondTotal } from "@/lib/cart";
 import { FULFILLMENT_OPTIONS, type FulfillmentMethod } from "@/lib/constants";
 import { getItemById } from "@/lib/catalog";
 import { isDateAvailable } from "@/lib/availability";
 import { DELIVERY_FEE_CENTS } from "@/lib/pricing";
 import { requireDb } from "@/lib/db";
 import { bookings } from "@/lib/db/schema";
-import { getStripe, getSiteUrl } from "@/lib/stripe";
+import { getStripe, getSiteUrl, getStripeConfigError } from "@/lib/stripe";
 import { serializeCartSnapshot } from "@/lib/emails/booking-confirmation";
 
 export async function POST(request: Request) {
   try {
+    const stripeConfigError = getStripeConfigError();
+    if (stripeConfigError) {
+      return NextResponse.json({ error: stripeConfigError }, { status: 503 });
+    }
+
     const body = await request.json();
     const customerEmail = body.email as string | undefined;
     const customerName = body.name as string | undefined;
@@ -63,7 +68,10 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      const available = await isDateAvailable(line.itemId, line.eventDate);
+      const available = await isDateAvailable(line.itemId, line.eventDate, {
+        selectedSize: line.selectedSize,
+        selectedSets: line.selectedSets,
+      });
       if (!available) {
         return NextResponse.json(
           {
@@ -87,11 +95,18 @@ export async function POST(request: Request) {
       quantity: number;
     }[] = [];
 
+    const hireTotalCents = cartHireTotal(cart);
+    const bondTotalCents = cartBondTotal(cart);
+    const deliveryFeeCents = fulfillmentMethod === "delivery" ? DELIVERY_FEE_CENTS : 0;
+
     const metadata: Record<string, string> = {
       customerName,
       customerEmail,
       cartCount: String(cart.length),
       fulfillmentMethod,
+      hireTotalCents: String(hireTotalCents),
+      bondTotalCents: String(bondTotalCents),
+      deliveryFeeCents: String(deliveryFeeCents),
       ...serializeCartSnapshot(cart),
     };
 
@@ -161,6 +176,8 @@ export async function POST(request: Request) {
           status: "pending",
           customerEmail,
           customerName,
+          selectedSize: line.selectedSize ?? null,
+          selectedSets: line.selectedSets ?? null,
         })
         .returning();
 
@@ -183,30 +200,39 @@ export async function POST(request: Request) {
 
     metadata.bookingIds = bookingIds.join(",");
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer_email: customerEmail,
-      line_items: lineItems,
-      success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/cart?cancelled=1`,
-      metadata,
-    });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        customer_email: customerEmail,
+        line_items: lineItems,
+        success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${siteUrl}/checkout/cancel?session_id={CHECKOUT_SESSION_ID}`,
+        metadata,
+      });
+    } catch (stripeError) {
+      await database
+        .delete(bookings)
+        .where(inArray(bookings.id, bookingIds));
+      throw stripeError;
+    }
+
+    if (!session.url) {
+      await database
+        .delete(bookings)
+        .where(inArray(bookings.id, bookingIds));
+      return NextResponse.json(
+        { error: "Could not start Stripe checkout. Please try again." },
+        { status: 500 },
+      );
+    }
 
     await database
       .update(bookings)
       .set({ stripeSessionId: session.id })
       .where(inArray(bookings.id, bookingIds));
 
-    const response = NextResponse.json({ url: session.url });
-    response.cookies.set(CART_COOKIE, "[]", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 0,
-      path: "/",
-    });
-
-    return response;
+    return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
     const message =

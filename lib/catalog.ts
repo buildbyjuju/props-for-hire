@@ -11,6 +11,8 @@ type JsonItemMeta = {
   bondCents?: number;
   selectionLabel?: string;
   selectionDisplay?: string;
+  colorImages?: Record<string, string>;
+  variantPrices?: Record<string, number>;
 };
 
 export type CatalogItem = {
@@ -29,6 +31,8 @@ export type CatalogItem = {
   bondCents?: number;
   selectionLabel?: string;
   selectionDisplay?: string;
+  colorImages?: Record<string, string>;
+  variantPrices?: Record<string, number>;
 };
 
 export type CatalogCategory = {
@@ -58,6 +62,8 @@ function jsonItemMeta(slug: string): JsonItemMeta | null {
         bondCents: meta.bondCents,
         selectionLabel: meta.selectionLabel,
         selectionDisplay: meta.selectionDisplay,
+        colorImages: meta.colorImages,
+        variantPrices: meta.variantPrices,
       };
     }
   }
@@ -85,6 +91,8 @@ function mapJsonItem(
     bondCents: meta.bondCents,
     selectionLabel: meta.selectionLabel,
     selectionDisplay: meta.selectionDisplay,
+    colorImages: meta.colorImages,
+    variantPrices: meta.variantPrices,
   };
 }
 
@@ -123,6 +131,8 @@ function mapDbItem(
     bondCents: meta?.bondCents,
     selectionLabel: meta?.selectionLabel,
     selectionDisplay: meta?.selectionDisplay,
+    colorImages: meta?.colorImages,
+    variantPrices: meta?.variantPrices,
   };
 }
 
@@ -138,17 +148,19 @@ export async function getAllCategories(): Promise<CatalogCategory[]> {
 
   const allItems = await db.select().from(items).where(eq(items.isActive, true));
 
-  return cats.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    slug: cat.slug,
-    description: cat.description,
-    imageUrl: categoryImage(cat.slug, cat.imageUrl),
-    sortOrder: cat.sortOrder,
-    items: allItems
-      .filter((i) => i.categoryId === cat.id)
-      .map((i) => mapDbItem(i, cat.slug)),
-  }));
+  return cats
+    .map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description,
+      imageUrl: categoryImage(cat.slug, cat.imageUrl),
+      sortOrder: cat.sortOrder,
+      items: allItems
+        .filter((i) => i.categoryId === cat.id)
+        .map((i) => mapDbItem(i, cat.slug)),
+    }))
+    .filter((cat) => cat.items.length > 0);
 }
 
 export async function getCategoryBySlug(

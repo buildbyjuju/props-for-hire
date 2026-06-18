@@ -40,6 +40,12 @@ export const CATEGORIES = [
     description: "Life-size character cutouts for playful photo moments and themed parties.",
     image: "/props/cutouts/elsa.jpg",
   },
+  {
+    slug: "event-furniture-and-marquees",
+    name: "Event Furniture & Marquees",
+    description: "Premium furniture and marquee hire for outdoor celebrations and styled event spaces.",
+    image: "/props/marquees/marqees.jpeg",
+  },
 ] as const;
 
 export const EVENT_TYPES = [
@@ -74,6 +80,9 @@ export const PICKUP_ADDRESS = "32 Broadford Street, Bexley NSW 2207";
 
 export const RETURN_POLICY =
   "All items must be returned clean and in good condition, with no damage, and in original packaging where applicable.";
+
+export const BOND_REFUND_NOTICE =
+  "Refundable bonds are returned after your items are returned and inspected. Late drop-off or damage may affect your bond refund.";
 
 export const DELIVERY_WINDOW_NOTICE =
   "Delivery will be between 10 AM and 1 PM on your pickup day.";

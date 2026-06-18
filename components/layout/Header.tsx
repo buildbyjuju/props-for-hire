@@ -7,9 +7,10 @@ import { NAV_LINKS } from "@/lib/constants";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
+import { homeSectionLink, mapNavLinks } from "@/lib/site-home";
 import { cn } from "@/lib/utils";
 
-const navLinks = NAV_LINKS.filter((link) => link.label !== "Contact");
+const navLinks = mapNavLinks(NAV_LINKS.filter((link) => link.label !== "Contact"));
 
 function NavLink({
   href,
@@ -65,7 +66,7 @@ export function Header() {
             )}
           </Link>
           <Button size="sm" variant="default" className="font-bold" asChild>
-            <Link href="/#contact">Contact</Link>
+            <Link href={homeSectionLink("contact")}>Contact</Link>
           </Button>
         </div>
 
@@ -112,7 +113,7 @@ export function Header() {
             />
           ))}
           <NavLink
-            href="/#contact"
+            href={homeSectionLink("contact")}
             label="Contact"
             onClick={() => setOpen(false)}
             className="py-1 text-sm sm:text-xs"

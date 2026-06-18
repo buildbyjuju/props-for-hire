@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
+import { ClearCartOnSuccess } from "@/components/checkout/ClearCartOnSuccess";
 import { Button } from "@/components/ui/button";
-import { parseCartSnapshot } from "@/lib/emails/booking-confirmation";
-import { FULFILLMENT_OPTIONS } from "@/lib/constants";
+import {
+  getBookingPaymentTotals,
+  parseCartSnapshot,
+} from "@/lib/emails/booking-confirmation";
+import { BOND_REFUND_NOTICE, FULFILLMENT_OPTIONS } from "@/lib/constants";
+import { fulfillPaidCheckoutSession } from "@/lib/checkout-fulfillment";
 import { getStripe } from "@/lib/stripe";
 import { formatPrice } from "@/lib/utils";
 
@@ -15,9 +20,13 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
 
   let customerName: string | null = null;
   let itemCount = 0;
+  let hireTotal: string | null = null;
+  let bondTotal: string | null = null;
+  let deliveryFee: string | null = null;
   let totalPaid: string | null = null;
   let fulfillmentLabel: string | null = null;
   let nextEventDate: string | null = null;
+  let paymentReceived = false;
 
   if (sessionId) {
     try {
@@ -26,12 +35,33 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
       const lines = parseCartSnapshot(session.metadata);
 
       if (session.payment_status === "paid") {
+        paymentReceived = true;
+        const result = await fulfillPaidCheckoutSession(session);
+
+        if (result.fulfilled && result.metadataUpdated) {
+          await stripe.checkout.sessions.update(session.id, {
+            metadata: result.metadata,
+          });
+        }
+
+        const totals = getBookingPaymentTotals(
+          session.metadata,
+          lines,
+          session.amount_total,
+        );
+
         customerName = session.metadata?.customerName ?? null;
         itemCount = lines.length;
-        totalPaid =
-          session.amount_total != null
-            ? formatPrice(session.amount_total)
+        hireTotal = formatPrice(totals.hireTotalCents);
+        bondTotal =
+          totals.bondTotalCents > 0
+            ? formatPrice(totals.bondTotalCents)
             : null;
+        deliveryFee =
+          totals.deliveryFeeCents > 0
+            ? formatPrice(totals.deliveryFeeCents)
+            : null;
+        totalPaid = formatPrice(totals.totalCents);
 
         const fulfillmentId = session.metadata?.fulfillmentMethod;
         fulfillmentLabel =
@@ -53,19 +83,42 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
 
   return (
     <div className="bg-warm-white py-16 sm:py-28">
+      <ClearCartOnSuccess enabled={paymentReceived} />
       <div className="mx-auto max-w-lg px-4 text-center sm:px-6">
-        <p className="text-xs uppercase tracking-luxury text-sage">Confirmed</p>
+        <p className="text-xs uppercase tracking-luxury text-sage">
+          {paymentReceived ? "Payment received" : "Thank you"}
+        </p>
         <h1 className="mt-5 font-serif text-3xl font-light text-foreground sm:mt-6 sm:text-4xl">
           {customerName ? `Thank you, ${customerName}` : "Thank you"}
         </h1>
         <p className="mt-6 font-light leading-relaxed text-foreground-soft">
-          Your payment is complete and your hire dates are reserved. A confirmation
-          email will arrive in your inbox shortly with pickup or delivery details.
+          {paymentReceived ? (
+            <>
+              Your payment has been received and your booking is{" "}
+              <strong className="font-normal text-foreground">
+                pending confirmation
+              </strong>
+              . We will review your order and email you pickup or delivery
+              details once confirmed.
+            </>
+          ) : (
+            <>
+              Your payment is being processed. A confirmation email will arrive
+              shortly with your booking details.
+            </>
+          )}
         </p>
 
-        {(itemCount > 0 || totalPaid || fulfillmentLabel || nextEventDate) && (
+        {(itemCount > 0 ||
+          hireTotal ||
+          bondTotal ||
+          totalPaid ||
+          fulfillmentLabel ||
+          nextEventDate) && (
           <div className="mt-8 rounded-3xl bg-cream p-6 text-left shadow-luxury sm:mt-10 sm:p-8">
-            <p className="text-xs uppercase tracking-luxury text-sage">Booking summary</p>
+            <p className="text-xs uppercase tracking-luxury text-sage">
+              Booking summary
+            </p>
             <dl className="mt-4 space-y-3 text-sm font-light text-foreground-soft">
               {itemCount > 0 ? (
                 <div className="flex justify-between gap-4">
@@ -85,13 +138,38 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
                   <dd className="text-foreground">{fulfillmentLabel}</dd>
                 </div>
               ) : null}
+              {hireTotal ? (
+                <div className="flex justify-between gap-4 border-t border-sage/15 pt-3">
+                  <dt>Hire fees</dt>
+                  <dd className="text-foreground">{hireTotal}</dd>
+                </div>
+              ) : null}
+              {bondTotal ? (
+                <div className="flex justify-between gap-4">
+                  <dt>Refundable bonds</dt>
+                  <dd className="text-foreground">{bondTotal}</dd>
+                </div>
+              ) : null}
+              {deliveryFee ? (
+                <div className="flex justify-between gap-4">
+                  <dt>Delivery fee</dt>
+                  <dd className="text-foreground">{deliveryFee}</dd>
+                </div>
+              ) : null}
               {totalPaid ? (
                 <div className="flex justify-between gap-4 border-t border-sage/15 pt-3">
                   <dt className="font-serif text-foreground">Total paid</dt>
-                  <dd className="font-serif text-lg text-foreground">{totalPaid}</dd>
+                  <dd className="font-serif text-lg text-foreground">
+                    {totalPaid}
+                  </dd>
                 </div>
               ) : null}
             </dl>
+            {bondTotal ? (
+              <p className="mt-4 text-xs font-light leading-relaxed text-foreground-soft">
+                {BOND_REFUND_NOTICE}
+              </p>
+            ) : null}
           </div>
         )}
 

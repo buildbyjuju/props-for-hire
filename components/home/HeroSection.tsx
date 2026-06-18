@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SOCIAL_LINKS } from "@/lib/constants";
+import { homeSectionLink } from "@/lib/site-home";
 import { Button } from "@/components/ui/button";
 
 export function HeroSection() {
@@ -22,7 +23,7 @@ export function HeroSection() {
           </p>
           <div className="mt-8 hidden flex-wrap justify-center gap-3 sm:gap-4 lg:mt-10 lg:flex lg:justify-start">
             <Button size="lg" className="min-h-11" asChild>
-              <Link href="/#props-hire">Props for Hire</Link>
+              <Link href={homeSectionLink("props-hire")}>Props for Hire</Link>
             </Button>
             <Button size="lg" variant="outline" className="min-h-11" asChild>
               <a
@@ -53,7 +54,7 @@ export function HeroSection() {
 
         <div className="mt-4 flex flex-wrap justify-center gap-3 px-4 pb-10 sm:mt-5 sm:gap-4 sm:px-6 sm:pb-12 lg:hidden">
           <Button size="lg" className="min-h-11" asChild>
-            <Link href="/#props-hire">Props for Hire</Link>
+            <Link href={homeSectionLink("props-hire")}>Props for Hire</Link>
           </Button>
           <Button size="lg" variant="outline" className="min-h-11" asChild>
             <a

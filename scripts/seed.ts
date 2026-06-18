@@ -88,6 +88,22 @@ async function main() {
         console.log(`    Created item: ${item.name}`);
       }
     }
+
+    const seededSlugs = new Set(cat.items.map((item) => item.slug));
+    const categoryItems = await db
+      .select()
+      .from(items)
+      .where(eq(items.categoryId, categoryId));
+
+    for (const dbItem of categoryItems) {
+      if (!seededSlugs.has(dbItem.slug) && dbItem.isActive) {
+        await db
+          .update(items)
+          .set({ isActive: false })
+          .where(eq(items.id, dbItem.id));
+        console.log(`    Deactivated item: ${dbItem.name}`);
+      }
+    }
   }
 
   console.log("Seed complete.");

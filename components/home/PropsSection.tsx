@@ -25,8 +25,8 @@ export function PropsSection() {
           ))}
         </HorizontalScroll>
 
-        <p className="mt-3 text-center text-xs font-light text-foreground-soft lg:hidden">
-          Swipe to browse collections
+        <p className="mt-3 text-center text-xs font-light text-foreground-soft">
+          Swipe or drag to browse collections
         </p>
 
         <div className="mt-8 text-center">

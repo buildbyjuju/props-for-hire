@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { format, addMonths, startOfToday, parseISO } from "date-fns";
 import type { CatalogItem } from "@/lib/catalog";
 import {
-  calculateHirePriceCents,
   formatBondNotice,
   formatHirePriceSummary,
+  formatVariantPriceRange,
+  getVariantPriceCents,
   getHireWindow,
   HIRE_PICKUP_NOTE,
   HIRE_PRICE_CENTS,
@@ -14,6 +16,7 @@ import {
   parseSetCount,
 } from "@/lib/pricing";
 import { formatPrice } from "@/lib/utils";
+import { getItemVariantImage, itemHasColorVariants } from "@/lib/item-images";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,25 +76,38 @@ export function HireDialog({
   item,
   categoryName,
   children,
+  selectedSize: controlledSize,
+  onSelectedSizeChange,
 }: {
   item: CatalogItem;
   categoryName: string;
   children: React.ReactNode;
+  selectedSize?: string;
+  onSelectedSizeChange?: (size: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Date | undefined>();
-  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [internalSize, setInternalSize] = useState("");
   const [selectedSets, setSelectedSets] = useState<string>("");
   const [unavailable, setUnavailable] = useState<string[]>([]);
   const [locked, setLocked] = useState<string[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
   const { addLine } = useCart();
 
+  const isControlledSize = controlledSize !== undefined;
+  const selectedSize = isControlledSize ? controlledSize : internalSize;
+  const hasColors = itemHasColorVariants(item);
+
   const hasSizes = Boolean(item.sizes?.length);
   const hasSetOptions = Boolean(item.setOptions?.length);
   const selectionLabel = item.selectionLabel ?? "Choose size";
   const selectionDisplay = item.selectionDisplay ?? "Size";
-  const priceSummary = hasSetOptions
+  const hasVariantPrices = Boolean(item.variantPrices);
+  const priceSummary = hasVariantPrices
+    ? selectedSize && item.variantPrices?.[selectedSize]
+      ? formatHirePriceSummary(item.variantPrices[selectedSize])
+      : formatVariantPriceRange(item.variantPrices!)
+    : hasSetOptions
     ? formatHirePriceSummary(item.priceCents, true)
     : item.priceCents !== HIRE_PRICE_CENTS
       ? formatHirePriceSummary(item.priceCents)
@@ -115,9 +131,21 @@ export function HireDialog({
   const eventDateStr = selected ? format(selected, "yyyy-MM-dd") : null;
   const hireWindow = eventDateStr ? getHireWindow(eventDateStr) : null;
   const totalCents = eventDateStr
-    ? calculateHirePriceCents(item.priceCents, setCount)
+    ? getVariantPriceCents(item, selectedSize || undefined, setCount)
     : null;
   const showDateLoading = open && readyForCalendar && loadingDates;
+  const previewImage = getItemVariantImage(
+    item,
+    hasColors && selectedSize ? selectedSize : undefined,
+  );
+
+  function updateSelectedSize(size: string) {
+    if (onSelectedSizeChange) {
+      onSelectedSizeChange(size);
+    } else {
+      setInternalSize(size);
+    }
+  }
 
   useEffect(() => {
     if (!open || !readyForCalendar) {
@@ -129,9 +157,19 @@ export function HireDialog({
     async function loadAvailability() {
       setLoadingDates(true);
       try {
-        const res = await fetch(
-          `/api/availability?itemId=${item.id}&from=${fromStr}&to=${toStr}`,
-        );
+        const params = new URLSearchParams({
+          itemId: item.id,
+          from: fromStr,
+          to: toStr,
+        });
+        if (selectedSize) {
+          params.set("selectedSize", selectedSize);
+        }
+        if (selectedSets) {
+          params.set("selectedSets", selectedSets);
+        }
+
+        const res = await fetch(`/api/availability?${params.toString()}`);
         const data = (await res.json()) as AvailabilityResponse;
         if (!cancelled) {
           setUnavailable(data.unavailable ?? []);
@@ -154,13 +192,15 @@ export function HireDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, item.id, readyForCalendar, fromStr, toStr]);
+  }, [open, item.id, readyForCalendar, fromStr, toStr, selectedSize, selectedSets]);
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
     if (!next) {
       setSelected(undefined);
-      setSelectedSize("");
+      if (!isControlledSize) {
+        setInternalSize("");
+      }
       setSelectedSets("");
       setUnavailable([]);
       setLocked([]);
@@ -168,7 +208,7 @@ export function HireDialog({
   }
 
   function handleSizeSelect(size: string) {
-    setSelectedSize(size);
+    updateSelectedSize(size);
     setSelected(undefined);
   }
 
@@ -190,7 +230,7 @@ export function HireDialog({
       categorySlug: item.categorySlug,
       priceCents: totalCents,
       eventDate,
-      imageUrl: item.imageUrls[0],
+      imageUrl: previewImage,
       selectedSize: selectedSize || undefined,
       selectedSets: selectedSets || undefined,
       bondCents: item.bondCents,
@@ -200,15 +240,15 @@ export function HireDialog({
     });
     setOpen(false);
     setSelected(undefined);
-    setSelectedSize("");
+    if (!isControlledSize) {
+      setInternalSize("");
+    }
     setSelectedSets("");
   }
 
   const isDisabled = (date: Date) => {
     const key = format(date, "yyyy-MM-dd");
-    return (
-      date < today || unavailable.includes(key) || locked.includes(key)
-    );
+    return date < today || unavailable.includes(key);
   };
 
   const lockedDates = locked.map((day) => parseISO(day));
@@ -227,6 +267,19 @@ export function HireDialog({
             {categoryName} · {priceSummary}
           </DialogDescription>
         </DialogHeader>
+
+        {hasColors ? (
+          <div className="relative mx-auto aspect-[4/3] w-full max-w-[280px] overflow-hidden rounded-2xl bg-cream">
+            <Image
+              src={previewImage}
+              alt={selectedSize ? `${item.name} — ${selectedSize}` : item.name}
+              fill
+              className="object-cover transition-opacity duration-300"
+              sizes="280px"
+            />
+          </div>
+        ) : null}
+
         <p className="text-sm font-light text-foreground-soft">{item.description}</p>
         {item.setIncludes ? (
           <p className="text-sm font-light text-foreground">{item.setIncludes}</p>
@@ -250,9 +303,20 @@ export function HireDialog({
         {hasSizes && (
           <OptionPills
             label={selectionLabel}
-            options={item.sizes!}
-            value={selectedSize}
-            onChange={handleSizeSelect}
+            options={item.sizes!.map((option) =>
+              item.variantPrices?.[option]
+                ? `${option} · ${formatPrice(item.variantPrices[option])}`
+                : option,
+            )}
+            value={
+              selectedSize && item.variantPrices?.[selectedSize]
+                ? `${selectedSize} · ${formatPrice(item.variantPrices[selectedSize])}`
+                : selectedSize
+            }
+            onChange={(label) => {
+              const option = item.sizes!.find((size) => label.startsWith(size)) ?? label;
+              handleSizeSelect(option);
+            }}
           />
         )}
 
@@ -301,7 +365,9 @@ export function HireDialog({
           <p className="text-sm font-light text-foreground-soft">
             {item.selectionDisplay === "Number"
               ? "Select a number to continue."
-              : "Select a size to continue."}
+              : item.selectionDisplay === "Package"
+                ? "Select a package to continue."
+                : "Select a size to continue."}
           </p>
         )}
 

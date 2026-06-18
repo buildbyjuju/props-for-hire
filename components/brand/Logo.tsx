@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { FULL_SITE_HOME } from "@/lib/site-home";
 import { cn } from "@/lib/utils";
 
 type LogoProps = {
   className?: string;
   variant?: "default" | "large" | "footer" | "header";
+  href?: string;
 };
 
 const variantStyles = {
@@ -14,10 +16,10 @@ const variantStyles = {
   default: "h-24 w-auto sm:h-28",
 } as const;
 
-export function Logo({ className, variant = "default" }: LogoProps) {
+export function Logo({ className, variant = "default", href = FULL_SITE_HOME }: LogoProps) {
   return (
     <Link
-      href="/"
+      href={href}
       className={cn(
         "inline-block shrink-0 transition-opacity hover:opacity-85",
         variant === "footer" && "block",

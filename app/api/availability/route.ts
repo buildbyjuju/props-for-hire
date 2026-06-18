@@ -20,10 +20,14 @@ export async function GET(request: Request) {
   }
 
   try {
+    const selectedSize = searchParams.get("selectedSize") ?? undefined;
+    const selectedSets = searchParams.get("selectedSets") ?? undefined;
+
     const availability = await getItemAvailability(
       itemId,
       parseISO(from),
       parseISO(to),
+      { selectedSize, selectedSets },
     );
     return NextResponse.json(availability);
   } catch (error) {

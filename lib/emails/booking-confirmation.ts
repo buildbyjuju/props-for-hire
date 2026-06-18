@@ -2,12 +2,13 @@ import { format, parseISO } from "date-fns";
 import { Resend } from "resend";
 import type Stripe from "stripe";
 import {
+  BOND_REFUND_NOTICE,
   FULFILLMENT_OPTIONS,
   PICKUP_ADDRESS,
   RETURN_POLICY,
   type FulfillmentMethod,
 } from "@/lib/constants";
-import { DELIVERY_FEE_CENTS, getHireWindow } from "@/lib/pricing";
+import { getHireWindow } from "@/lib/pricing";
 import { getBookingNotificationEmail } from "@/lib/stripe";
 import { formatPrice } from "@/lib/utils";
 
@@ -100,6 +101,84 @@ export function serializeCartSnapshot(
   return meta;
 }
 
+export function getBookingPaymentTotals(
+  metadata: Stripe.Metadata | null,
+  lines: BookingLineSnapshot[],
+  amountTotalCents?: number | null,
+) {
+  const hireTotalCents =
+    metadata?.hireTotalCents != null
+      ? Number.parseInt(metadata.hireTotalCents, 10)
+      : lines.reduce((sum, line) => sum + line.p, 0);
+  const bondTotalCents =
+    metadata?.bondTotalCents != null
+      ? Number.parseInt(metadata.bondTotalCents, 10)
+      : lines.reduce((sum, line) => sum + line.b, 0);
+  const deliveryFeeCents =
+    metadata?.deliveryFeeCents != null
+      ? Number.parseInt(metadata.deliveryFeeCents, 10)
+      : 0;
+
+  const computedTotal =
+    hireTotalCents + bondTotalCents + deliveryFeeCents;
+  const totalCents = amountTotalCents ?? computedTotal;
+
+  return {
+    hireTotalCents,
+    bondTotalCents,
+    deliveryFeeCents,
+    totalCents,
+  };
+}
+
+function buildPaymentTotalsHtml({
+  hireTotalCents,
+  bondTotalCents,
+  deliveryFeeCents,
+  totalCents,
+}: {
+  hireTotalCents: number;
+  bondTotalCents: number;
+  deliveryFeeCents: number;
+  totalCents: number;
+}) {
+  const rows = [
+    `<tr>
+      <td style="padding:8px 0;color:#6b6560;">Hire fees</td>
+      <td style="padding:8px 0;text-align:right;">${formatPrice(hireTotalCents)}</td>
+    </tr>`,
+    bondTotalCents > 0
+      ? `<tr>
+          <td style="padding:8px 0;color:#6b6560;">Refundable bonds</td>
+          <td style="padding:8px 0;text-align:right;">${formatPrice(bondTotalCents)}</td>
+        </tr>`
+      : "",
+    deliveryFeeCents > 0
+      ? `<tr>
+          <td style="padding:8px 0;color:#6b6560;">Delivery fee</td>
+          <td style="padding:8px 0;text-align:right;">${formatPrice(deliveryFeeCents)}</td>
+        </tr>`
+      : "",
+    `<tr>
+      <td style="padding:12px 0 0;border-top:1px solid #e8e4de;font-weight:500;color:#2c2825;">Total paid</td>
+      <td style="padding:12px 0 0;border-top:1px solid #e8e4de;text-align:right;font-weight:500;">${formatPrice(totalCents)}</td>
+    </tr>`,
+  ]
+    .filter(Boolean)
+    .join("");
+
+  const bondNote =
+    bondTotalCents > 0
+      ? `<p style="margin-top:12px;color:#6b6560;font-size:14px;">${escapeHtml(BOND_REFUND_NOTICE)}</p>`
+      : "";
+
+  return `
+    <table style="width:100%;max-width:320px;margin:24px 0 0;border-collapse:collapse;font-size:15px;">
+      <tbody>${rows}</tbody>
+    </table>
+    ${bondNote}`;
+}
+
 function lineDetailParts(line: BookingLineSnapshot) {
   const parts: string[] = [];
   if (line.sz) parts.push(`Size: ${line.sz}`);
@@ -127,7 +206,7 @@ function buildLineItemsHtml(
       const returnDay = line.r ?? window.returnDate;
       const bond =
         line.b > 0
-          ? `${formatPrice(line.b)} <span style="color:#6b6560;font-size:13px;">(refundable)</span>`
+          ? `${formatPrice(line.b)} <span style="color:#6b6560;font-size:13px;">(refundable after return)</span>`
           : "—";
 
       return `
@@ -155,7 +234,7 @@ function buildLineItemsHtml(
       <thead>
         <tr style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#6b6560;">
           <th style="padding-bottom:8px;">Item</th>
-          <th style="padding-bottom:8px;text-align:right;">Hire price</th>
+          <th style="padding-bottom:8px;text-align:right;">Hire fee</th>
           <th style="padding-bottom:8px;text-align:right;">Bond</th>
           <th style="padding-bottom:8px;">${datesHeader}</th>
         </tr>
@@ -191,7 +270,7 @@ function buildPickupHtml(lines: BookingLineSnapshot[]) {
     <p><strong>Drop off:</strong> ${returnText}</p>
     <p><strong>Pickup address:</strong><br>${escapeHtml(PICKUP_ADDRESS)}</p>
     <p style="margin-top:16px;color:#6b6560;font-size:14px;">
-      Refundable bonds are returned once your items are returned according to our return policy below.
+      ${escapeHtml(BOND_REFUND_NOTICE)}
     </p>`;
 }
 
@@ -215,7 +294,7 @@ function buildDeliveryHtml(
     ${
       totalBond > 0
         ? `<p style="margin-top:16px;"><strong>Refundable bond total:</strong> ${formatPrice(totalBond)}</p>
-           <p style="color:#6b6560;font-size:14px;">Bonds are refunded once items are returned according to our return policy below.</p>`
+           <p style="color:#6b6560;font-size:14px;">${escapeHtml(BOND_REFUND_NOTICE)}</p>`
         : ""
     }`;
 }
@@ -227,6 +306,7 @@ export function buildBookingConfirmationHtml({
   deliveryAddress,
   leaveAtDoor,
   amountTotalCents,
+  metadata,
 }: {
   customerName: string;
   fulfillmentMethod: FulfillmentMethod;
@@ -234,31 +314,24 @@ export function buildBookingConfirmationHtml({
   deliveryAddress?: string;
   leaveAtDoor: boolean;
   amountTotalCents?: number | null;
+  metadata?: Stripe.Metadata | null;
 }) {
   const isPickup = fulfillmentMethod === "pickup_bexley";
   const fulfillmentBlock = isPickup
     ? buildPickupHtml(lines)
     : buildDeliveryHtml(deliveryAddress ?? "Not provided", leaveAtDoor, lines);
 
-  const totalLine =
-    amountTotalCents != null
-      ? `<p style="margin-top:24px;font-size:16px;"><strong>Total paid:</strong> ${formatPrice(amountTotalCents)}</p>`
-      : "";
-
-  const deliveryFeeNote =
-    !isPickup
-      ? `<p style="color:#6b6560;font-size:14px;">Includes ${formatPrice(DELIVERY_FEE_CENTS)} delivery fee.</p>`
-      : "";
+  const totals = getBookingPaymentTotals(metadata ?? null, lines, amountTotalCents);
+  const paymentTotalsHtml = buildPaymentTotalsHtml(totals);
 
   return `
     <div style="font-family:Georgia,'Times New Roman',serif;color:#2c2825;max-width:640px;line-height:1.6;">
-      <p style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#a8b5a2;">Booking confirmed</p>
+      <p style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#a8b5a2;">Payment received</p>
       <h1 style="font-size:28px;font-weight:400;margin:16px 0 8px;">Thank you, ${escapeHtml(customerName)}</h1>
-      <p>Your payment is complete and your hire dates are reserved. Here is a summary of your booking.</p>
+      <p>Your payment has been received and your booking is <strong>pending confirmation</strong>. We will review your order and send pickup or delivery details once confirmed.</p>
 
       ${buildLineItemsHtml(lines, fulfillmentMethod)}
-      ${totalLine}
-      ${deliveryFeeNote}
+      ${paymentTotalsHtml}
       ${fulfillmentBlock}
 
       <h2 style="font-size:18px;font-weight:500;margin:32px 0 12px;">Return policy</h2>
@@ -293,6 +366,7 @@ function buildBookingOwnerHtml({
   leaveAtDoor,
   amountTotalCents,
   stripeSessionId,
+  metadata,
 }: {
   customerName: string;
   customerEmail: string;
@@ -302,27 +376,27 @@ function buildBookingOwnerHtml({
   leaveAtDoor: boolean;
   amountTotalCents?: number | null;
   stripeSessionId: string;
+  metadata?: Stripe.Metadata | null;
 }) {
   const isPickup = fulfillmentMethod === "pickup_bexley";
   const fulfillmentBlock = isPickup
     ? buildPickupHtml(lines)
     : buildDeliveryHtml(deliveryAddress ?? "Not provided", leaveAtDoor, lines);
 
-  const totalLine =
-    amountTotalCents != null
-      ? `<p style="margin-top:16px;font-size:16px;"><strong>Total paid:</strong> ${formatPrice(amountTotalCents)}</p>`
-      : "";
+  const totals = getBookingPaymentTotals(metadata ?? null, lines, amountTotalCents);
+  const paymentTotalsHtml = buildPaymentTotalsHtml(totals);
 
   return `
     <div style="font-family:Georgia,'Times New Roman',serif;color:#2c2825;max-width:640px;line-height:1.6;">
-      <p style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#a8b5a2;">New paid booking</p>
+      <p style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#a8b5a2;">New booking — pending confirmation</p>
       <h1 style="font-size:28px;font-weight:400;margin:16px 0 8px;">${escapeHtml(customerName)}</h1>
       <p><strong>Email:</strong> <a href="mailto:${escapeHtml(customerEmail)}">${escapeHtml(customerEmail)}</a></p>
+      <p><strong>Status:</strong> Pending confirmation</p>
       <p><strong>Collection:</strong> ${escapeHtml(getFulfillmentLabel(fulfillmentMethod))}</p>
       <p style="color:#6b6560;font-size:14px;"><strong>Stripe session:</strong> ${escapeHtml(stripeSessionId)}</p>
 
       ${buildLineItemsHtml(lines, fulfillmentMethod)}
-      ${totalLine}
+      ${paymentTotalsHtml}
       ${fulfillmentBlock}
 
       <h2 style="font-size:18px;font-weight:500;margin:32px 0 12px;">Return policy</h2>
@@ -372,6 +446,7 @@ export async function sendBookingOwnerNotificationEmail(
     leaveAtDoor,
     amountTotalCents: session.amount_total,
     stripeSessionId: session.id,
+    metadata: session.metadata,
   });
 
   const resend = new Resend(resendKey);
@@ -381,7 +456,7 @@ export async function sendBookingOwnerNotificationEmail(
     from: getResendFromAddress(),
     to: ownerEmail,
     replyTo: customerEmail,
-    subject: `New booking — ${customerName} — ${totalLabel}`,
+    subject: `New booking (pending confirmation) — ${customerName} — ${totalLabel}`,
     html,
   });
 
@@ -423,13 +498,14 @@ export async function sendBookingConfirmationEmail(
     deliveryAddress,
     leaveAtDoor,
     amountTotalCents: session.amount_total,
+    metadata: session.metadata,
   });
 
   const resend = new Resend(resendKey);
   const { error } = await resend.emails.send({
     from: getResendFromAddress(),
     to: customerEmail,
-    subject: "Your DreamScape Event booking confirmation",
+    subject: "Your DreamScape Event booking — payment received",
     html,
   });
 
