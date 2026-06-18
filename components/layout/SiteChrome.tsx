@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
@@ -10,7 +11,7 @@ import { SplashScreen } from "@/components/layout/SplashScreen";
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isStandalone =
-    pathname === "/" || pathname === "/admin" || pathname.startsWith("/admin/");
+    pathname === "/admin" || pathname.startsWith("/admin/");
 
   if (isStandalone) {
     return <>{children}</>;
@@ -18,6 +19,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <CartProvider>
+      <AnnouncementBanner />
       <SplashScreen />
       <Header />
       <main>{children}</main>

@@ -1,5 +1,5 @@
-/** Full-site homepage while public `/` shows Coming Soon. */
-export const FULL_SITE_HOME = "/preview";
+/** Public marketing homepage. */
+export const FULL_SITE_HOME = "/";
 
 export function homeSectionLink(sectionId: string) {
   return `${FULL_SITE_HOME}#${sectionId}`;

@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { ComingSoonLanding } from "@/components/coming-soon/ComingSoonLanding";
+import { HomePageContent } from "@/components/home/HomePageContent";
 
 export const metadata: Metadata = {
-  title: "Coming Soon | Dream Scape Moments",
+  title: "DreamScape Event | Luxury Props & Event Styling Sydney",
   description:
-    "Something exciting is coming. Soon you'll be able to hire party props online — until then, book via Instagram and WhatsApp.",
+    "Luxury props for hire and bespoke event styling in Sydney. Browse our collections and book online.",
   openGraph: {
-    title: "Dream Scape Moments — Coming Soon",
-    description: "Luxury party props and event styling — launching soon.",
+    title: "DreamScape Event",
+    description: "Luxury event styling and props for hire — Sydney.",
     type: "website",
     images: ["/logo.png"],
   },
 };
 
 export default function HomePage() {
-  return <ComingSoonLanding />;
+  return <HomePageContent />;
 }
