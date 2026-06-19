@@ -4,6 +4,10 @@ import { inArray } from "drizzle-orm";
 import { CART_COOKIE, parseCart, cartHireTotal, cartBondTotal } from "@/lib/cart";
 import { FULFILLMENT_OPTIONS, type FulfillmentMethod } from "@/lib/constants";
 import { getItemById } from "@/lib/catalog";
+import {
+  catalogDatabaseErrorMessage,
+  getCatalogDatabaseStatus,
+} from "@/lib/catalog-health";
 import { isDateAvailable } from "@/lib/availability";
 import { DELIVERY_FEE_CENTS } from "@/lib/pricing";
 import { requireDb } from "@/lib/db";
@@ -58,14 +62,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
+    const catalogStatus = await getCatalogDatabaseStatus();
+    if (catalogStatus !== "ready") {
+      return NextResponse.json(
+        {
+          error: catalogDatabaseErrorMessage(catalogStatus),
+        },
+        { status: catalogStatus === "not_configured" ? 503 : 400 },
+      );
+    }
+
     for (const line of cart) {
       if (line.itemId.startsWith("static-")) {
         return NextResponse.json(
           {
             error:
-              "Database not seeded. Run npm run db:push && npm run db:seed before checkout.",
+              "Your cart was created before the shop database was ready. Please remove the item and add it again.",
           },
-          { status: 400 },
+          { status: 409 },
         );
       }
       const available = await isDateAvailable(line.itemId, line.eventDate, {

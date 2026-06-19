@@ -27,7 +27,24 @@ npm run db:seed
 
 `db:seed` loads items from [`data/items.json`](data/items.json). Edit that file and re-run seed when you add props.
 
-**Important:** Online hire and checkout only work after the database is seeded. Until then, the site shows the catalogue using static data (browse only).
+**Important:** Online hire and checkout only work after `DATABASE_URL` is set in Vercel **and** the database is seeded. Without `DATABASE_URL`, the site falls back to static catalogue IDs (`static-...`) and checkout is blocked.
+
+### Production (Vercel + Neon)
+
+1. Create or open your **Neon** Postgres database (Sydney region recommended: `ap-southeast-2`).
+2. In Vercel → your production project → **Settings → Environment Variables**, add:
+   - `DATABASE_URL` — the Neon connection string (`postgresql://...`)
+   - `NEXT_PUBLIC_SITE_URL` — e.g. `https://dreamscapemoments.com.au`
+   - `ADMIN_PASSWORD`, Stripe keys, Resend keys (see `.env.example`)
+3. From your machine (with `DATABASE_URL` in `.env.local` pointing at the **same** Neon database):
+
+```bash
+npm run db:push
+npm run db:seed
+```
+
+4. **Redeploy** production so the new env vars load.
+5. Verify: open `https://your-domain.com/api/health/database` — it should return `"checkoutReady": true`.
 
 ## 4. Stripe (live checkout)
 

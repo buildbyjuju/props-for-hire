@@ -16,7 +16,8 @@ import {
   parseSetCount,
 } from "@/lib/pricing";
 import { formatPrice } from "@/lib/utils";
-import { getItemVariantImage, itemHasColorVariants } from "@/lib/item-images";
+import { cn } from "@/lib/utils";
+import { getItemVariantImage, itemHasColorVariants, CUTOUT_IMAGE_CLASS, isCutoutCategory } from "@/lib/item-images";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 
 type AvailabilityResponse = {
   unavailable: string[];
@@ -75,12 +75,14 @@ function OptionPills({
 export function HireDialog({
   item,
   categoryName,
+  categorySlug,
   children,
   selectedSize: controlledSize,
   onSelectedSizeChange,
 }: {
   item: CatalogItem;
   categoryName: string;
+  categorySlug: string;
   children: React.ReactNode;
   selectedSize?: string;
   onSelectedSizeChange?: (size: string) => void;
@@ -268,13 +270,18 @@ export function HireDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {hasColors ? (
+        {(hasColors || isCutoutCategory(categorySlug)) ? (
           <div className="relative mx-auto aspect-[4/3] w-full max-w-[280px] overflow-hidden rounded-2xl bg-cream">
             <Image
               src={previewImage}
               alt={selectedSize ? `${item.name} — ${selectedSize}` : item.name}
               fill
-              className="object-cover transition-opacity duration-300"
+              className={cn(
+                "transition-opacity duration-300",
+                isCutoutCategory(categorySlug)
+                  ? CUTOUT_IMAGE_CLASS
+                  : "object-cover",
+              )}
               sizes="280px"
             />
           </div>
