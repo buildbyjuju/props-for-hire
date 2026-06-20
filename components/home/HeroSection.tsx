@@ -8,8 +8,8 @@ export function HeroSection() {
   return (
     <section id="home" className="relative w-full overflow-hidden bg-cream">
       <div className="relative mx-auto flex max-w-7xl flex-col lg:grid lg:min-h-[75vh] lg:grid-cols-2 lg:items-center">
-        <div className="relative z-10 flex flex-col justify-center px-4 py-10 text-center sm:px-6 sm:py-12 lg:py-20 lg:pl-6 lg:pr-8 lg:text-left xl:pr-12">
-          <p className="mb-4 text-xs font-light uppercase tracking-luxury text-black">
+        <div className="relative z-10 flex flex-col justify-center px-4 py-5 text-center sm:px-6 sm:py-8 lg:py-20 lg:pl-6 lg:pr-8 lg:text-left xl:pr-12">
+          <p className="mb-3 text-xs font-light uppercase tracking-luxury text-black sm:mb-4">
             Sydney · Luxury Event Styling
           </p>
           <h1 className="mx-auto max-w-4xl font-serif text-3xl font-light leading-[1.15] text-black sm:text-4xl md:text-5xl lg:mx-0 lg:max-w-none lg:text-5xl xl:text-6xl">

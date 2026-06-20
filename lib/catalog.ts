@@ -1,5 +1,6 @@
 import { eq, asc } from "drizzle-orm";
 import catalogData from "@/data/items.json";
+import { getCatalogItemMeta } from "@/lib/catalog-meta";
 import { CATEGORIES } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { categories, items } from "@/lib/db/schema";
@@ -50,26 +51,6 @@ function categoryImage(slug: string, fallback: string | null) {
   return fromConstants?.image ?? fallback;
 }
 
-function jsonItemMeta(slug: string): JsonItemMeta | null {
-  for (const cat of catalogData.categories) {
-    const item = cat.items.find((i) => i.slug === slug);
-    if (item) {
-      const meta = item as JsonItemMeta;
-      return {
-        sizes: meta.sizes,
-        setOptions: meta.setOptions,
-        setIncludes: meta.setIncludes,
-        bondCents: meta.bondCents,
-        selectionLabel: meta.selectionLabel,
-        selectionDisplay: meta.selectionDisplay,
-        colorImages: meta.colorImages,
-        variantPrices: meta.variantPrices,
-      };
-    }
-  }
-  return null;
-}
-
 function mapJsonItem(
   item: (typeof catalogData.categories)[number]["items"][number],
   cat: (typeof catalogData.categories)[number],
@@ -114,7 +95,7 @@ function mapDbItem(
   row: typeof items.$inferSelect,
   categorySlug: string,
 ): CatalogItem {
-  const meta = jsonItemMeta(row.slug);
+  const meta = getCatalogItemMeta(row.slug);
   return {
     id: row.id,
     categoryId: row.categoryId,

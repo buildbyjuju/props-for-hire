@@ -38,12 +38,12 @@ export const CATEGORIES = [
     slug: "cutouts",
     name: "Cutouts",
     description: "Life-size character cutouts for playful photo moments and themed parties.",
-    image: "/props/cutouts/elsa.jpg",
+    image: "/props/cutouts/olaf.jpg",
   },
   {
     slug: "event-furniture-and-marquees",
     name: "Event Furniture & Marquees",
-    description: "Premium furniture and marquee hire for outdoor celebrations and styled event spaces.",
+    description: "Premium furniture and marquee hire. Marquees: 3m × 3m $80 · 3m × 6m $120 · $150 refundable bond.",
     image: "/props/marquees/marqees.jpeg",
   },
 ] as const;

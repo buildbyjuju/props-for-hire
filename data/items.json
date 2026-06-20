@@ -115,22 +115,38 @@
           "setOptions": ["1 set", "2 sets"]
         },
         {
-          "slug": "food-warmer-set-of-4",
-          "name": "Food Warmer — Set of 4",
-          "description": "Hire four stainless steel chafing dishes to keep buffet food warm throughout your event.",
-          "priceCents": 8000,
+          "slug": "food-warmer-full-pan",
+          "name": "Food Warmer — Full Pan",
+          "description": "Stainless steel full-pan chafing dishes to keep buffet food warm throughout your event.",
+          "priceCents": 4000,
           "bondCents": 15000,
           "quantityAvailable": 1,
-          "imageUrls": ["/props/food-raisers/set-of-4.jpg"]
+          "imageUrls": ["/props/food-raisers/set-of-4.jpg"],
+          "sizes": ["Set of 2", "Set of 4", "Set of 6"],
+          "selectionLabel": "Choose set size",
+          "selectionDisplay": "Set",
+          "variantPrices": {
+            "Set of 2": 4000,
+            "Set of 4": 8000,
+            "Set of 6": 12000
+          }
         },
         {
-          "slug": "food-warmer-set-of-6",
-          "name": "Food Warmer — Set of 6",
-          "description": "Hire six stainless steel chafing dishes to keep buffet food warm throughout your event.",
-          "priceCents": 13000,
+          "slug": "food-warmer-split-pan",
+          "name": "Food Warmer — Split Pan",
+          "description": "Stainless steel split-pan chafing dishes to keep buffet food warm throughout your event.",
+          "priceCents": 4000,
           "bondCents": 15000,
           "quantityAvailable": 1,
-          "imageUrls": ["/props/food-raisers/set-of-6.jpg"]
+          "imageUrls": ["/props/food-raisers/set-of-6.jpg"],
+          "sizes": ["Set of 2", "Set of 4", "Set of 6"],
+          "selectionLabel": "Choose set size",
+          "selectionDisplay": "Set",
+          "variantPrices": {
+            "Set of 2": 4000,
+            "Set of 4": 8000,
+            "Set of 6": 12000
+          }
         }
       ]
     },
@@ -144,7 +160,7 @@
         {
           "slug": "light-number",
           "name": "Light Number",
-          "description": "Glow neon number hire — perfect for birthdays, ages, and personalised styling.",
+          "description": "Glow neon number hire — perfect for birthdays, ages, and personalised styling. The numbers are 120cm tall.",
           "priceCents": 2500,
           "bondCents": 5000,
           "quantityAvailable": 10,
@@ -174,7 +190,7 @@
     {
       "slug": "event-furniture-and-marquees",
       "name": "Event Furniture & Marquees",
-      "description": "Premium furniture and marquee hire for outdoor celebrations and styled event spaces.",
+      "description": "Premium furniture and marquee hire for outdoor celebrations and styled event spaces. Marquees: 3m × 3m $80 · 3m × 6m $120 · $150 refundable bond.",
       "sortOrder": 6,
       "imageUrl": "/props/marquees/marqees.jpeg",
       "items": [
@@ -182,12 +198,17 @@
           "slug": "marquees",
           "name": "Marquees",
           "description": "Elegant white marquee hire — choose your footprint for garden parties, receptions, and outdoor events.",
-          "priceCents": 5000,
+          "priceCents": 8000,
+          "bondCents": 15000,
           "quantityAvailable": 2,
           "imageUrls": ["/props/marquees/marqees.jpeg"],
           "sizes": ["3m x 3m", "3m x 6m"],
           "selectionLabel": "Choose size",
-          "selectionDisplay": "Size"
+          "selectionDisplay": "Size",
+          "variantPrices": {
+            "3m x 3m": 8000,
+            "3m x 6m": 12000
+          }
         }
       ]
     },
@@ -196,7 +217,7 @@
       "name": "Cutouts",
       "description": "Life-size character cutouts for playful photo moments and themed parties.",
       "sortOrder": 5,
-      "imageUrl": "/props/cutouts/elsa.jpg",
+      "imageUrl": "/props/cutouts/olaf.jpg",
       "items": [
         {
           "slug": "elsa",

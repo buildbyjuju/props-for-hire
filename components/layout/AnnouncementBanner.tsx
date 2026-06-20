@@ -3,8 +3,8 @@ import { homeSectionLink } from "@/lib/site-home";
 
 export function AnnouncementBanner() {
   return (
-    <div className="border-b border-sage/20 bg-sage/90 px-4 py-2.5 text-center backdrop-blur-sm">
-      <p className="mx-auto max-w-4xl text-xs font-light leading-relaxed text-black sm:text-sm">
+    <div className="border-b border-sage/20 bg-sage/90 px-3 py-1.5 text-center backdrop-blur-sm sm:px-4 sm:py-2">
+      <p className="mx-auto max-w-4xl text-[11px] font-light leading-snug text-black sm:text-xs sm:leading-relaxed">
         ✨ DreamScape Events is now live! More props and packages are being added
         daily.{" "}
         <Link

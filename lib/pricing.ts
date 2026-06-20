@@ -1,4 +1,5 @@
 import { addDays, format, parseISO } from "date-fns";
+import { getCatalogItemMeta } from "@/lib/catalog-meta";
 import { formatPrice } from "@/lib/utils";
 
 /** Flat hire price per event */
@@ -45,16 +46,32 @@ export function calculateHirePriceCents(
   return basePriceCents * setCount;
 }
 
+export type PriceableItem = {
+  slug?: string;
+  priceCents: number;
+  variantPrices?: Record<string, number>;
+};
+
+export function resolveVariantPrices(
+  item: PriceableItem,
+): Record<string, number> | undefined {
+  if (item.variantPrices && Object.keys(item.variantPrices).length > 0) {
+    return item.variantPrices;
+  }
+  if (item.slug) {
+    return getCatalogItemMeta(item.slug)?.variantPrices;
+  }
+  return undefined;
+}
+
 export function getVariantPriceCents(
-  item: {
-    priceCents: number;
-    variantPrices?: Record<string, number>;
-  },
+  item: PriceableItem,
   variant?: string,
   setCount = 1,
 ): number {
-  if (variant && item.variantPrices?.[variant]) {
-    return item.variantPrices[variant];
+  const variantPrices = resolveVariantPrices(item);
+  if (variant && variantPrices && variantPrices[variant] !== undefined) {
+    return variantPrices[variant];
   }
   return calculateHirePriceCents(item.priceCents, setCount);
 }
@@ -86,4 +103,14 @@ export const HIRE_BOND_NOTICE =
 
 export function formatBondNotice(bondCents: number): string {
   return `A ${formatPrice(bondCents)} refundable bond is required and returned once the item is returned clean and in good condition. Late drop-off may affect your bond refund.`;
+}
+
+/** Category-specific bond amounts (defaults to HIRE_BOND_CENTS) */
+export const CATEGORY_BOND_CENTS: Record<string, number> = {
+  "event-furniture-and-marquees": 15000,
+};
+
+export function getCategoryBondNotice(categorySlug: string): string {
+  const bondCents = CATEGORY_BOND_CENTS[categorySlug] ?? HIRE_BOND_CENTS;
+  return formatBondNotice(bondCents);
 }

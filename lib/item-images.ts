@@ -18,3 +18,10 @@ export function itemHasColorVariants(
 ) {
   return Boolean(item.colorImages && item.sizes?.length);
 }
+
+export function isCutoutCategory(categorySlug: string) {
+  return categorySlug === "cutouts";
+}
+
+export const CUTOUT_IMAGE_CLASS =
+  "object-contain object-center bg-warm-white p-4";

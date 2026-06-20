@@ -3,8 +3,8 @@ import { SectionHeading } from "./SectionHeading";
 
 const portfolio = [
   {
-    src: "/gallery/setup-1.jpg",
-    alt: "DreamScape Event styling setup",
+    src: "/gallery/cinderella.jpg",
+    alt: "Cinderella-themed first birthday styling with arch backdrop, balloons, and light number",
   },
   {
     src: "/gallery/setup-2.jpg",

@@ -5,13 +5,13 @@ import { homeSectionLink } from "@/lib/site-home";
 
 export function Footer() {
   return (
-    <footer className="section-padding bg-cream">
+    <footer className="bg-cream py-10 sm:py-12">
       <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-        <Logo variant="footer" className="mb-6 sm:mb-8" />
+        <Logo variant="footer" className="mb-4 sm:mb-5" />
         <p className="mx-auto max-w-md text-sm font-light leading-relaxed text-foreground-soft">
           Luxury props for hire and bespoke event styling across Sydney.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-5 sm:mt-8 sm:gap-8">
+        <div className="mt-4 flex flex-wrap justify-center gap-4 sm:mt-5 sm:gap-6">
           <Link
             href={homeSectionLink("props-hire")}
             className="text-xs uppercase tracking-luxury text-foreground-soft hover:text-sage"
@@ -35,7 +35,7 @@ export function Footer() {
             Instagram
           </a>
         </div>
-        <p className="mt-12 text-xs font-light tracking-wider text-foreground-soft/70">
+        <p className="mt-6 text-xs font-light tracking-wider text-foreground-soft/70 sm:mt-8">
           © {new Date().getFullYear()} DreamScape Event
         </p>
       </div>

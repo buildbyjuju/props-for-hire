@@ -14,6 +14,7 @@ import {
   HIRE_PRICE_CENTS,
   HIRE_PRICING_SUMMARY,
   parseSetCount,
+  resolveVariantPrices,
 } from "@/lib/pricing";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -104,11 +105,12 @@ export function HireDialog({
   const hasSetOptions = Boolean(item.setOptions?.length);
   const selectionLabel = item.selectionLabel ?? "Choose size";
   const selectionDisplay = item.selectionDisplay ?? "Size";
-  const hasVariantPrices = Boolean(item.variantPrices);
+  const variantPrices = resolveVariantPrices(item);
+  const hasVariantPrices = Boolean(variantPrices);
   const priceSummary = hasVariantPrices
-    ? selectedSize && item.variantPrices?.[selectedSize]
-      ? formatHirePriceSummary(item.variantPrices[selectedSize])
-      : formatVariantPriceRange(item.variantPrices!)
+    ? selectedSize && variantPrices?.[selectedSize] !== undefined
+      ? formatHirePriceSummary(variantPrices[selectedSize])
+      : formatVariantPriceRange(variantPrices!)
     : hasSetOptions
     ? formatHirePriceSummary(item.priceCents, true)
     : item.priceCents !== HIRE_PRICE_CENTS
@@ -308,23 +310,31 @@ export function HireDialog({
         )}
 
         {hasSizes && (
-          <OptionPills
-            label={selectionLabel}
-            options={item.sizes!.map((option) =>
-              item.variantPrices?.[option]
-                ? `${option} · ${formatPrice(item.variantPrices[option])}`
-                : option,
-            )}
-            value={
-              selectedSize && item.variantPrices?.[selectedSize]
-                ? `${selectedSize} · ${formatPrice(item.variantPrices[selectedSize])}`
-                : selectedSize
-            }
-            onChange={(label) => {
-              const option = item.sizes!.find((size) => label.startsWith(size)) ?? label;
-              handleSizeSelect(option);
-            }}
-          />
+          <div>
+            <p className="mb-3 text-xs uppercase tracking-luxury text-foreground-soft">
+              {selectionLabel}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {item.sizes!.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => handleSizeSelect(size)}
+                  className={cn(
+                    "min-h-11 rounded-full border px-4 py-2.5 text-xs uppercase tracking-wider transition-colors",
+                    selectedSize === size
+                      ? "border-sage bg-sage text-black"
+                      : "border-sage/30 bg-cream text-foreground hover:border-sage",
+                  )}
+                >
+                  {size}
+                  {variantPrices?.[size] !== undefined
+                    ? ` · ${formatPrice(variantPrices[size])}`
+                    : ""}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {hasSetOptions && hasSizes && sizeChosen && (
@@ -374,7 +384,9 @@ export function HireDialog({
               ? "Select a number to continue."
               : item.selectionDisplay === "Package"
                 ? "Select a package to continue."
-                : "Select a size to continue."}
+                : item.selectionDisplay === "Set"
+                  ? "Select a set size to continue."
+                  : "Select a size to continue."}
           </p>
         )}
 

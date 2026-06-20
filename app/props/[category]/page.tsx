@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { getCategoryBySlug } from "@/lib/catalog";
 import { ItemCard } from "@/components/props/ItemCard";
-import { HIRE_BOND_NOTICE } from "@/lib/pricing";
+import { getCategoryBondNotice } from "@/lib/pricing";
+import { CUTOUT_IMAGE_CLASS, isCutoutCategory } from "@/lib/item-images";
 import { CATEGORIES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type Props = {
   params: Promise<{ category: string }>;
@@ -33,7 +35,9 @@ export default async function CategoryPage({ params }: Props) {
             src={heroImage}
             alt={category.name}
             fill
-            className="object-cover"
+            className={cn(
+              isCutoutCategory(slug) ? CUTOUT_IMAGE_CLASS : "object-cover",
+            )}
             priority
             sizes="100vw"
           />
@@ -50,15 +54,20 @@ export default async function CategoryPage({ params }: Props) {
         <h1 className="mt-6 font-serif text-3xl font-light text-foreground sm:mt-8 sm:text-4xl lg:text-5xl">
           {category.name}
         </h1>
-        <p className="mt-4 max-w-2xl text-sm font-light leading-relaxed text-foreground sm:mt-6">
-          {HIRE_BOND_NOTICE}
+        <p className="mt-4 max-w-2xl text-sm font-light leading-relaxed text-foreground-soft sm:mt-6">
+          {getCategoryBondNotice(slug)}
         </p>
         <p className="mt-3 max-w-xl text-sm font-light leading-relaxed text-foreground-soft sm:mt-4">
           {category.description}
         </p>
         <div className="mt-10 grid gap-6 sm:mt-16 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 lg:gap-10">
           {category.items.map((item) => (
-            <ItemCard key={item.id} item={item} categoryName={category.name} />
+            <ItemCard
+              key={item.id}
+              item={item}
+              categoryName={category.name}
+              categorySlug={slug}
+            />
           ))}
         </div>
         {category.items.length === 0 && (

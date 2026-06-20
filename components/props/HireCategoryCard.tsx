@@ -37,7 +37,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon | typeof ArchIcon> = {
 };
 
 const CATEGORY_IMAGE_CLASS: Record<string, string> = {
-  cutouts: "object-cover object-top",
+  cutouts: "object-contain object-center bg-warm-white p-4",
   "event-furniture-and-marquees": "object-contain bg-white p-2",
 };
 

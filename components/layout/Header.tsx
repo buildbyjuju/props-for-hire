@@ -43,7 +43,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-cream/20 bg-cream/35 backdrop-blur-lg backdrop-saturate-150">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:py-5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 sm:px-6 sm:py-3 lg:py-5">
         <Logo variant="header" />
 
         {/* Desktop nav */}
@@ -74,19 +74,19 @@ export function Header() {
         <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
           <Link
             href="/cart"
-            className="relative flex h-10 w-10 items-center justify-center text-black"
+            className="relative flex h-9 w-9 items-center justify-center text-black"
             aria-label="Cart"
           >
             <ShoppingBag className="h-[18px] w-[18px] stroke-[1.25]" />
             {count > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-warm-white text-[9px] text-black">
+              <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-warm-white text-[9px] text-black">
                 {count}
               </span>
             )}
           </Link>
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center text-black"
+            className="flex h-9 w-9 items-center justify-center text-black"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
             aria-expanded={open}

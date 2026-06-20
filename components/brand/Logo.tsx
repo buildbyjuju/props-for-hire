@@ -10,8 +10,8 @@ type LogoProps = {
 };
 
 const variantStyles = {
-  header: "h-[4.5rem] w-auto sm:h-20 md:h-24 lg:h-32",
-  footer: "mx-auto h-24 w-auto sm:h-28 lg:h-36",
+  header: "h-11 w-auto sm:h-20 md:h-24 lg:h-32",
+  footer: "mx-auto h-32 w-auto sm:h-36 md:h-40",
   large: "h-36 w-auto sm:h-40",
   default: "h-24 w-auto sm:h-28",
 } as const;

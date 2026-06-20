@@ -10,8 +10,9 @@ import {
   HIRE_PICKUP_NOTE,
   HIRE_PRICE_CENTS,
   HIRE_PRICING_SUMMARY,
+  resolveVariantPrices,
 } from "@/lib/pricing";
-import { getItemVariantImage, itemHasColorVariants } from "@/lib/item-images";
+import { getItemVariantImage, itemHasColorVariants, CUTOUT_IMAGE_CLASS, isCutoutCategory } from "@/lib/item-images";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, formatPrice } from "@/lib/utils";
@@ -55,40 +56,55 @@ function ColorPills({
 export function ItemCard({
   item,
   categoryName,
+  categorySlug,
 }: {
   item: CatalogItem;
   categoryName: string;
+  categorySlug: string;
 }) {
   const hasColors = itemHasColorVariants(item);
+  const hasSetOptions = Boolean(item.setOptions?.length);
+  const hasSizes = Boolean(item.sizes?.length);
+  const variantPrices = resolveVariantPrices(item);
+  const hasVariantPrices = Boolean(variantPrices);
+  const hasSizeVariants = hasSizes && hasVariantPrices && !hasColors;
+
   const [selectedColor, setSelectedColor] = useState(item.sizes?.[0] ?? "");
+  const [selectedSetSize, setSelectedSetSize] = useState("");
+
+  const activeSize = hasColors ? selectedColor : selectedSetSize;
 
   const imageUrl = getItemVariantImage(
     item,
     hasColors ? selectedColor : undefined,
   );
 
-  const hasSetOptions = Boolean(item.setOptions?.length);
-  const hasSizes = Boolean(item.sizes?.length);
-  const hasVariantPrices = Boolean(item.variantPrices);
-  const priceLabel = hasVariantPrices
-    ? formatVariantPriceRange(item.variantPrices!)
-    : hasSetOptions
-    ? formatHirePriceSummary(item.priceCents, true)
-    : item.priceCents !== HIRE_PRICE_CENTS
-      ? formatHirePriceSummary(item.priceCents)
-      : HIRE_PRICING_SUMMARY;
+  const priceLabel =
+    hasVariantPrices && activeSize && variantPrices?.[activeSize] !== undefined
+      ? formatHirePriceSummary(variantPrices[activeSize])
+      : hasVariantPrices
+        ? formatVariantPriceRange(variantPrices!)
+        : hasSetOptions
+          ? formatHirePriceSummary(item.priceCents, true)
+          : item.priceCents !== HIRE_PRICE_CENTS
+            ? formatHirePriceSummary(item.priceCents)
+            : HIRE_PRICING_SUMMARY;
 
   const reserveLabel = hasColors
     ? item.selectionLabel ?? "Choose colour"
-    : hasSetOptions && !hasSizes
-      ? "Choose sets"
-      : item.selectionLabel
-        ? item.selectionLabel
-        : hasSizes
-          ? hasSetOptions
-            ? "Choose size & sets"
-            : "Choose size"
-          : "Reserve";
+    : hasSizeVariants
+      ? activeSize
+        ? "Choose date"
+        : (item.selectionLabel ?? "Choose set size")
+      : hasSetOptions && !hasSizes
+        ? "Choose sets"
+        : item.selectionLabel
+          ? item.selectionLabel
+          : hasSizes
+            ? hasSetOptions
+              ? "Choose size & sets"
+              : "Choose size"
+            : "Reserve";
 
   return (
     <Card>
@@ -101,7 +117,11 @@ export function ItemCard({
               : item.name
           }
           fill
-          className="object-cover transition-opacity duration-300"
+          className={
+            isCutoutCategory(categorySlug)
+              ? `${CUTOUT_IMAGE_CLASS} transition-opacity duration-300`
+              : "object-cover transition-opacity duration-300"
+          }
           sizes="(max-width: 768px) 100vw, 33vw"
         />
       </div>
@@ -121,9 +141,30 @@ export function ItemCard({
             />
             {hasVariantPrices ? (
               <p className="text-xs font-light text-foreground-soft">
-                Set of 4 {formatPrice(item.variantPrices!["Set of 4"])}
-                {" · "}
-                Set of 6 {formatPrice(item.variantPrices!["Set of 6"])}
+                {Object.entries(variantPrices!)
+                  .sort(([, a], [, b]) => a - b)
+                  .map(([label, cents]) => `${label} ${formatPrice(cents)}`)
+                  .join(" · ")}
+              </p>
+            ) : null}
+          </div>
+        ) : hasSizeVariants ? (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs uppercase tracking-luxury text-foreground-soft">
+              {item.selectionLabel ?? "Choose size"}
+            </p>
+            <ColorPills
+              options={item.sizes!}
+              value={selectedSetSize}
+              onChange={setSelectedSetSize}
+              compact
+            />
+            {hasVariantPrices ? (
+              <p className="text-xs font-light text-foreground-soft">
+                {Object.entries(variantPrices!)
+                  .sort(([, a], [, b]) => a - b)
+                  .map(([label, cents]) => `${label} ${formatPrice(cents)}`)
+                  .join(" · ")}
               </p>
             ) : null}
           </div>
@@ -131,11 +172,13 @@ export function ItemCard({
           <p className="mt-3 text-xs font-light text-foreground-soft">
             {item.setIncludes}
           </p>
-        ) : item.sizes?.length ? (
+        ) : item.sizes?.length && !hasSizeVariants ? (
           <p className="mt-3 text-xs font-light text-foreground-soft">
             {item.selectionDisplay === "Number"
               ? `Numbers: ${item.sizes.join(" · ")}`
-              : `Sizes: ${item.sizes.join(" · ")}`}
+              : item.selectionDisplay === "Set"
+                ? item.sizes.join(" · ")
+                : `Sizes: ${item.sizes.join(" · ")}`}
           </p>
         ) : null}
         {item.bondCents ? (
@@ -154,6 +197,22 @@ export function ItemCard({
           <p className="font-serif text-xl font-bold text-sage sm:text-2xl">
             {priceLabel}
           </p>
+          {hasSizeVariants && activeSize && variantPrices?.[activeSize] !== undefined ? (
+            <div className="mt-2 space-y-0.5 text-xs font-light text-foreground-soft">
+              <p>
+                {item.selectionDisplay ?? "Size"}: {activeSize}
+              </p>
+              {item.bondCents ? (
+                <>
+                  <p>Refundable bond: {formatPrice(item.bondCents)}</p>
+                  <p className="font-medium text-foreground">
+                    Total at checkout:{" "}
+                    {formatPrice(variantPrices[activeSize] + item.bondCents)}
+                  </p>
+                </>
+              ) : null}
+            </div>
+          ) : null}
           <p className="mt-1 text-xs font-light text-foreground-soft">
             {HIRE_PICKUP_NOTE}
           </p>
@@ -161,10 +220,21 @@ export function ItemCard({
         <HireDialog
           item={item}
           categoryName={categoryName}
-          selectedSize={hasColors ? selectedColor : undefined}
-          onSelectedSizeChange={hasColors ? setSelectedColor : undefined}
+          categorySlug={categorySlug}
+          selectedSize={
+            hasColors ? selectedColor : hasSizeVariants ? selectedSetSize : undefined
+          }
+          onSelectedSizeChange={
+            hasColors
+              ? setSelectedColor
+              : hasSizeVariants
+                ? setSelectedSetSize
+                : undefined
+          }
         >
-          <Button size="sm">{reserveLabel}</Button>
+          <Button size="sm" disabled={hasSizeVariants && !selectedSetSize}>
+            {reserveLabel}
+          </Button>
         </HireDialog>
       </CardContent>
     </Card>

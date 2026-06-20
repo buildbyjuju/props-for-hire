@@ -22,7 +22,7 @@ export function CategoryCard({
           fill
           className={
             slug === "cutouts"
-              ? "object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              ? "object-contain object-center bg-warm-white p-6 transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               : "object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
           }
           sizes="(max-width: 768px) 100vw, 50vw"
