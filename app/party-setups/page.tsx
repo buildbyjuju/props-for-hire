@@ -44,7 +44,7 @@ const PARTY_SETUP_OFFERS = [
     title: "DJ & entertainment",
     description:
       "We can connect you with DJs and entertainers from our network so your celebration keeps its energy from start to finish.",
-    image: "/gallery/setup-1.jpg",
+    image: "/party-setups/birthday.jpg",
     alt: "DreamScape Event party entertainment setup",
   },
 ] as const;

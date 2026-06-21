@@ -4,7 +4,11 @@ import { SectionHeading } from "./SectionHeading";
 const portfolio = [
   {
     src: "/gallery/cinderella.jpg",
-    alt: "Cinderella-themed first birthday styling with arch backdrop, balloons, and light number",
+    alt: "Cinderella-themed first birthday with arch backdrop, balloon garland, cutout, and light number",
+  },
+  {
+    src: "/gallery/setup-1.jpg",
+    alt: "Mickey Mouse first birthday with black arch backdrop, balloon garland, and themed cake",
   },
   {
     src: "/gallery/setup-2.jpg",
@@ -12,11 +16,7 @@ const portfolio = [
   },
   {
     src: "/gallery/setup-3.jpg",
-    alt: "DreamScape Event props and décor setup",
-  },
-  {
-    src: "/gallery/setup-4.jpg",
-    alt: "DreamScape Event luxury event setup",
+    alt: "Sage and cream outdoor picnic styling with double arch backdrop and balloon garland",
   },
 ];
 
