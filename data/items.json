@@ -147,6 +147,23 @@
             "Set of 4": 8000,
             "Set of 6": 12000
           }
+        },
+        {
+          "slug": "round-food-warmers",
+          "name": "Round Food Warmers",
+          "description": "Polished stainless steel round chafing dishes to keep buffet food warm throughout your event.",
+          "priceCents": 4000,
+          "bondCents": 15000,
+          "quantityAvailable": 1,
+          "imageUrls": ["/props/food-raisers/round-food-warmers.jpg"],
+          "sizes": ["Set of 2", "Set of 4", "Set of 6"],
+          "selectionLabel": "Choose set size",
+          "selectionDisplay": "Set",
+          "variantPrices": {
+            "Set of 2": 4000,
+            "Set of 4": 8000,
+            "Set of 6": 12000
+          }
         }
       ]
     },
