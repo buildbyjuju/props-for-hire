@@ -8,7 +8,7 @@ const portfolio = [
   },
   {
     src: "/gallery/setup-2.jpg",
-    alt: "DreamScape Event celebration styling",
+    alt: "80th birthday styling with wood backdrop, balloon arch, light-up numbers, and tree stump plinth",
   },
   {
     src: "/gallery/setup-3.jpg",
