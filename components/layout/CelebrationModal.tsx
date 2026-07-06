@@ -2,17 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HIRE_DISCOUNT_PERCENT } from "@/lib/pricing";
 
-const STORAGE_KEY = "dreamscape-turns-2-dismissed-v2";
+const STORAGE_KEY = "dreamscape-turns-2-dismissed-v3";
 const SPLASH_KEY = "dreamscape-splash-seen";
 const POST_SPLASH_DELAY_MS = 700;
 const SPLASH_MAX_WAIT_MS = 4500;
@@ -35,7 +29,7 @@ const CONFETTI_PIECES = [
 function CelebrationConfetti() {
   return (
     <div
-      className="celebration-confetti-field pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
       aria-hidden
     >
       {CONFETTI_PIECES.map((piece, index) => (
@@ -76,11 +70,7 @@ export function CelebrationModal() {
   const hasScheduled = useRef(false);
 
   useEffect(() => {
-    if (hasScheduled.current) {
-      return;
-    }
-
-    if (localStorage.getItem(STORAGE_KEY)) {
+    if (hasScheduled.current || localStorage.getItem(STORAGE_KEY)) {
       return;
     }
 
@@ -99,6 +89,7 @@ export function CelebrationModal() {
         }
 
         setOpen(true);
+        document.body.style.overflow = "hidden";
 
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           setShowConfetti(true);
@@ -111,26 +102,49 @@ export function CelebrationModal() {
       if (openTimer) {
         window.clearTimeout(openTimer);
       }
+      document.body.style.overflow = "";
     };
   }, []);
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next);
-    if (!next) {
-      localStorage.setItem(STORAGE_KEY, "1");
-      setShowConfetti(false);
-    }
+  function close() {
+    setOpen(false);
+    setShowConfetti(false);
+    document.body.style.overflow = "";
+    localStorage.setItem(STORAGE_KEY, "1");
+  }
+
+  if (!open) {
+    return null;
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        overlayClassName="z-[110]"
-        className="relative z-[111] max-w-md overflow-hidden border border-sage/25 text-center"
-      >
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="celebration-title"
+      aria-describedby="celebration-description"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-foreground/25 backdrop-blur-sm"
+        aria-label="Close celebration message"
+        onClick={close}
+      />
+
+      <div className="celebration-modal-panel relative z-[201] w-full max-w-md overflow-hidden rounded-3xl border border-sage/25 bg-warm-white p-6 text-center shadow-luxury sm:p-8">
         {showConfetti ? <CelebrationConfetti /> : null}
 
-        <div className="celebration-modal-enter relative z-10 flex flex-col items-center">
+        <button
+          type="button"
+          onClick={close}
+          className="absolute right-4 top-4 z-20 text-foreground-soft transition hover:text-sage sm:right-6 sm:top-6"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4 stroke-[1.25]" />
+        </button>
+
+        <div className="relative z-10 flex flex-col items-center">
           <p className="text-xs uppercase tracking-luxury text-sage">
             ✨ Celebrating ✨
           </p>
@@ -149,16 +163,20 @@ export function CelebrationModal() {
             </span>
           </div>
 
-          <DialogHeader className="mt-5 items-center text-center">
-            <DialogTitle className="text-center text-2xl sm:text-3xl">
-              DreamScape Moments is 2!
-            </DialogTitle>
-            <DialogDescription className="max-w-sm text-center text-sm leading-relaxed">
-              Two years of styling beautiful celebrations across Sydney. Thank
-              you for being part of our story — here&apos;s to many more
-              unforgettable moments.
-            </DialogDescription>
-          </DialogHeader>
+          <h2
+            id="celebration-title"
+            className="mt-5 font-serif text-2xl font-light text-foreground sm:text-3xl"
+          >
+            DreamScape Moments is 2!
+          </h2>
+          <p
+            id="celebration-description"
+            className="mt-3 max-w-sm text-sm font-light leading-relaxed text-foreground-soft"
+          >
+            Two years of styling beautiful celebrations across Sydney. Thank you
+            for being part of our story — here&apos;s to many more unforgettable
+            moments.
+          </p>
 
           {HIRE_DISCOUNT_PERCENT > 0 ? (
             <p className="mt-4 rounded-full bg-sage/10 px-4 py-2 text-xs font-light text-foreground">
@@ -168,20 +186,20 @@ export function CelebrationModal() {
 
           <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
             <Button className="min-h-11 w-full sm:w-auto" asChild>
-              <Link href="/props" onClick={() => handleOpenChange(false)}>
+              <Link href="/props" onClick={close}>
                 Browse the collection
               </Link>
             </Button>
             <Button
               variant="outline"
               className="min-h-11 w-full sm:w-auto"
-              onClick={() => handleOpenChange(false)}
+              onClick={close}
             >
               Continue exploring
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
