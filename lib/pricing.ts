@@ -2,8 +2,15 @@ import { addDays, format, parseISO } from "date-fns";
 import { getCatalogItemMeta } from "@/lib/catalog-meta";
 import { formatPrice } from "@/lib/utils";
 
-/** Flat hire price per event */
+/** Flat hire price per event (list price before any promotion) */
 export const HIRE_PRICE_CENTS = 5000;
+
+/** Percentage off hire fees only — bonds are excluded */
+export const HIRE_DISCOUNT_PERCENT = 20;
+
+export function applyHireDiscount(listPriceCents: number): number {
+  return Math.round(listPriceCents * (100 - HIRE_DISCOUNT_PERCENT) / 100);
+}
 
 /** One-off delivery fee when customer chooses delivery at checkout */
 export const DELIVERY_FEE_CENTS = 5000;
@@ -43,7 +50,7 @@ export function calculateHirePriceCents(
   basePriceCents: number = HIRE_PRICE_CENTS,
   setCount = 1,
 ): number {
-  return basePriceCents * setCount;
+  return applyHireDiscount(basePriceCents * setCount);
 }
 
 export type PriceableItem = {
@@ -71,27 +78,55 @@ export function getVariantPriceCents(
 ): number {
   const variantPrices = resolveVariantPrices(item);
   if (variant && variantPrices && variantPrices[variant] !== undefined) {
-    return variantPrices[variant];
+    return applyHireDiscount(variantPrices[variant]);
   }
   return calculateHirePriceCents(item.priceCents, setCount);
 }
 
+export function getListHirePriceCents(
+  item: PriceableItem,
+  variant?: string,
+  setCount = 1,
+): number {
+  const variantPrices = resolveVariantPrices(item);
+  if (variant && variantPrices && variantPrices[variant] !== undefined) {
+    return variantPrices[variant];
+  }
+  return item.priceCents * setCount;
+}
+
+export function estimateListHirePriceCents(salePriceCents: number): number {
+  if (HIRE_DISCOUNT_PERCENT <= 0) {
+    return salePriceCents;
+  }
+  return Math.round(salePriceCents / (1 - HIRE_DISCOUNT_PERCENT / 100));
+}
+
 export function formatVariantPriceRange(variantPrices: Record<string, number>): string {
-  const amounts = Object.values(variantPrices).sort((a, b) => a - b);
+  const amounts = Object.values(variantPrices)
+    .map(applyHireDiscount)
+    .sort((a, b) => a - b);
   const low = amounts[0];
   const high = amounts[amounts.length - 1];
   if (low === high) {
-    return formatHirePriceSummary(low);
+    return formatHirePriceSummary(low, false, false);
   }
   return `${formatPrice(low)} – ${formatPrice(high)} per hire`;
 }
 
-export function formatHirePriceSummary(priceCents: number, perSet = false): string {
+export function formatHirePriceSummary(
+  listPriceCents: number,
+  perSet = false,
+  applyDiscount = true,
+): string {
+  const priceCents = applyDiscount
+    ? applyHireDiscount(listPriceCents)
+    : listPriceCents;
   const amount = formatPrice(priceCents);
   return perSet ? `${amount} per set` : `${amount} per hire`;
 }
 
-export const HIRE_PRICING_SUMMARY = "$50 per hire";
+export const HIRE_PRICING_SUMMARY = `${formatPrice(applyHireDiscount(HIRE_PRICE_CENTS))} per hire`;
 
 export const HIRE_PICKUP_NOTE =
   "Pickup the day before your event · return the day after";

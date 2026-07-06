@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { useCart } from "@/components/cart/CartProvider";
+import { DiscountedHirePrice } from "@/components/pricing/DiscountedHirePrice";
 import { cartLineKey, cartBondTotal, cartHireTotal } from "@/lib/cart";
 import {
   BOND_REFUND_NOTICE,
@@ -14,7 +15,7 @@ import {
   PICKUP_BEXLEY_NOTICE,
   type FulfillmentMethod,
 } from "@/lib/constants";
-import { DELIVERY_FEE_CENTS } from "@/lib/pricing";
+import { DELIVERY_FEE_CENTS, estimateListHirePriceCents } from "@/lib/pricing";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -148,7 +149,13 @@ export default function CartPage() {
                         </p>
                       )}
                       <p className="mt-2 font-serif text-sage">
-                        Hire fee: {formatPrice(line.priceCents)}
+                        Hire fee:{" "}
+                        <DiscountedHirePrice
+                          listPriceCents={
+                            line.listPriceCents ??
+                            estimateListHirePriceCents(line.priceCents)
+                          }
+                        />
                       </p>
                       {line.bondCents ? (
                         <p className="text-xs font-light text-foreground-soft">

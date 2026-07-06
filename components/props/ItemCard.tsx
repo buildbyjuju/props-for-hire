@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import {
+  DiscountedHirePrice,
+  DiscountedHirePriceRange,
+} from "@/components/pricing/DiscountedHirePrice";
 import type { CatalogItem } from "@/lib/catalog";
 import {
+  applyHireDiscount,
   formatBondNotice,
-  formatHirePriceSummary,
-  formatVariantPriceRange,
   HIRE_PICKUP_NOTE,
-  HIRE_PRICE_CENTS,
-  HIRE_PRICING_SUMMARY,
   resolveVariantPrices,
 } from "@/lib/pricing";
 import { getItemVariantImage, itemHasColorVariants, CUTOUT_IMAGE_CLASS, isCutoutCategory } from "@/lib/item-images";
@@ -79,16 +80,32 @@ export function ItemCard({
     hasColors ? selectedColor : undefined,
   );
 
-  const priceLabel =
-    hasVariantPrices && activeSize && variantPrices?.[activeSize] !== undefined
-      ? formatHirePriceSummary(variantPrices[activeSize])
-      : hasVariantPrices
-        ? formatVariantPriceRange(variantPrices!)
-        : hasSetOptions
-          ? formatHirePriceSummary(item.priceCents, true)
-          : item.priceCents !== HIRE_PRICE_CENTS
-            ? formatHirePriceSummary(item.priceCents)
-            : HIRE_PRICING_SUMMARY;
+  const priceLabel = hasVariantPrices ? (
+    activeSize && variantPrices?.[activeSize] !== undefined ? (
+      <DiscountedHirePrice
+        listPriceCents={variantPrices[activeSize]}
+        suffix=" per hire"
+        showBadge
+      />
+    ) : (
+      <DiscountedHirePriceRange
+        variantPrices={variantPrices!}
+        showBadge
+      />
+    )
+  ) : hasSetOptions ? (
+    <DiscountedHirePrice
+      listPriceCents={item.priceCents}
+      suffix=" per set"
+      showBadge
+    />
+  ) : (
+    <DiscountedHirePrice
+      listPriceCents={item.priceCents}
+      suffix=" per hire"
+      showBadge
+    />
+  );
 
   const reserveLabel = hasColors
     ? item.selectionLabel ?? "Choose colour"
@@ -140,11 +157,16 @@ export function ItemCard({
               compact
             />
             {hasVariantPrices ? (
-              <p className="text-xs font-light text-foreground-soft">
+              <p className="flex flex-wrap justify-center gap-x-2 gap-y-1 text-xs font-light text-foreground-soft">
                 {Object.entries(variantPrices!)
                   .sort(([, a], [, b]) => a - b)
-                  .map(([label, cents]) => `${label} ${formatPrice(cents)}`)
-                  .join(" · ")}
+                  .map(([label, cents], index) => (
+                    <span key={label} className="inline-flex items-baseline gap-1">
+                      {index > 0 ? <span className="text-foreground-soft/40">·</span> : null}
+                      <span>{label}</span>
+                      <DiscountedHirePrice listPriceCents={cents} />
+                    </span>
+                  ))}
               </p>
             ) : null}
           </div>
@@ -160,11 +182,16 @@ export function ItemCard({
               compact
             />
             {hasVariantPrices ? (
-              <p className="text-xs font-light text-foreground-soft">
+              <p className="flex flex-wrap justify-center gap-x-2 gap-y-1 text-xs font-light text-foreground-soft">
                 {Object.entries(variantPrices!)
                   .sort(([, a], [, b]) => a - b)
-                  .map(([label, cents]) => `${label} ${formatPrice(cents)}`)
-                  .join(" · ")}
+                  .map(([label, cents], index) => (
+                    <span key={label} className="inline-flex items-baseline gap-1">
+                      {index > 0 ? <span className="text-foreground-soft/40">·</span> : null}
+                      <span>{label}</span>
+                      <DiscountedHirePrice listPriceCents={cents} />
+                    </span>
+                  ))}
               </p>
             ) : null}
           </div>
@@ -207,7 +234,9 @@ export function ItemCard({
                   <p>Refundable bond: {formatPrice(item.bondCents)}</p>
                   <p className="font-medium text-foreground">
                     Total at checkout:{" "}
-                    {formatPrice(variantPrices[activeSize] + item.bondCents)}
+                    {formatPrice(
+                      applyHireDiscount(variantPrices[activeSize]) + item.bondCents,
+                    )}
                   </p>
                 </>
               ) : null}

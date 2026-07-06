@@ -3,16 +3,17 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { format, addMonths, startOfToday, parseISO } from "date-fns";
+import {
+  DiscountedHirePrice,
+  DiscountedHirePriceRange,
+} from "@/components/pricing/DiscountedHirePrice";
 import type { CatalogItem } from "@/lib/catalog";
 import {
   formatBondNotice,
-  formatHirePriceSummary,
-  formatVariantPriceRange,
+  getListHirePriceCents,
   getVariantPriceCents,
   getHireWindow,
   HIRE_PICKUP_NOTE,
-  HIRE_PRICE_CENTS,
-  HIRE_PRICING_SUMMARY,
   parseSetCount,
   resolveVariantPrices,
 } from "@/lib/pricing";
@@ -107,15 +108,29 @@ export function HireDialog({
   const selectionDisplay = item.selectionDisplay ?? "Size";
   const variantPrices = resolveVariantPrices(item);
   const hasVariantPrices = Boolean(variantPrices);
-  const priceSummary = hasVariantPrices
-    ? selectedSize && variantPrices?.[selectedSize] !== undefined
-      ? formatHirePriceSummary(variantPrices[selectedSize])
-      : formatVariantPriceRange(variantPrices!)
-    : hasSetOptions
-    ? formatHirePriceSummary(item.priceCents, true)
-    : item.priceCents !== HIRE_PRICE_CENTS
-      ? formatHirePriceSummary(item.priceCents)
-      : HIRE_PRICING_SUMMARY;
+  const priceSummary = hasVariantPrices ? (
+    selectedSize && variantPrices?.[selectedSize] !== undefined ? (
+      <DiscountedHirePrice
+        listPriceCents={variantPrices[selectedSize]}
+        suffix=" per hire"
+        showBadge
+      />
+    ) : (
+      <DiscountedHirePriceRange variantPrices={variantPrices!} showBadge />
+    )
+  ) : hasSetOptions ? (
+    <DiscountedHirePrice
+      listPriceCents={item.priceCents}
+      suffix=" per set"
+      showBadge
+    />
+  ) : (
+    <DiscountedHirePrice
+      listPriceCents={item.priceCents}
+      suffix=" per hire"
+      showBadge
+    />
+  );
   const sizeChosen = !hasSizes || Boolean(selectedSize);
   const setsChosen = !hasSetOptions || Boolean(selectedSets);
   const readyForCalendar = sizeChosen && setsChosen;
@@ -134,6 +149,11 @@ export function HireDialog({
   const setCount = selectedSets ? parseSetCount(selectedSets) : 1;
   const eventDateStr = selected ? format(selected, "yyyy-MM-dd") : null;
   const hireWindow = eventDateStr ? getHireWindow(eventDateStr) : null;
+  const listHireCents = getListHirePriceCents(
+    item,
+    selectedSize || undefined,
+    setCount,
+  );
   const totalCents = eventDateStr
     ? getVariantPriceCents(item, selectedSize || undefined, setCount)
     : null;
@@ -233,6 +253,7 @@ export function HireDialog({
       itemSlug: item.slug,
       categorySlug: item.categorySlug,
       priceCents: totalCents,
+      listPriceCents: listHireCents,
       eventDate,
       imageUrl: previewImage,
       selectedSize: selectedSize || undefined,
@@ -327,10 +348,12 @@ export function HireDialog({
                       : "border-sage/30 bg-cream text-foreground hover:border-sage",
                   )}
                 >
-                  {size}
-                  {variantPrices?.[size] !== undefined
-                    ? ` · ${formatPrice(variantPrices[size])}`
-                    : ""}
+                  <span className="block">{size}</span>
+                  {variantPrices?.[size] !== undefined ? (
+                    <span className="mt-0.5 block normal-case tracking-normal">
+                      <DiscountedHirePrice listPriceCents={variantPrices[size]} />
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -408,7 +431,8 @@ export function HireDialog({
             <p>Event: {dateLabel(hireWindow.eventDate)}</p>
             <p>Return: {dateLabel(hireWindow.returnDate)}</p>
             <p className="mt-2 font-medium text-foreground">
-              Hire: {formatPrice(totalCents)}
+              Hire:{" "}
+              <DiscountedHirePrice listPriceCents={listHireCents} />
             </p>
             {item.bondCents ? (
               <p className="font-medium text-foreground">

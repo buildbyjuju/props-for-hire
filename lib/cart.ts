@@ -6,6 +6,7 @@ export const cartLineSchema = z.object({
   itemSlug: z.string(),
   categorySlug: z.string(),
   priceCents: z.number().int().positive(),
+  listPriceCents: z.number().int().positive().optional(),
   eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   imageUrl: z.string().optional(),
   selectedSize: z.string().optional(),
