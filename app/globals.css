@@ -228,6 +228,45 @@ body {
       transform: translateY(0);
     }
   }
+
+  .celebration-confetti-piece {
+    opacity: 0;
+    animation-name: celebration-confetti-fall;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes celebration-confetti-fall {
+    0% {
+      opacity: 0;
+      transform: translateY(-12px) rotate(0deg);
+    }
+
+    12% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateY(320px) rotate(420deg);
+    }
+  }
+
+  .celebration-modal-enter {
+    animation: celebration-modal-in 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes celebration-modal-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
