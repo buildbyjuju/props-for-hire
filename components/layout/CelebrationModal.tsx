@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Dialog,
@@ -12,10 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { HIRE_DISCOUNT_PERCENT } from "@/lib/pricing";
 
-const STORAGE_KEY = "dreamscape-2nd-birthday-dismissed";
+const STORAGE_KEY = "dreamscape-turns-2-dismissed-v2";
 const SPLASH_KEY = "dreamscape-splash-seen";
-const RETURN_VISIT_DELAY_MS = 1400;
-const FIRST_VISIT_DELAY_MS = 2800;
+const POST_SPLASH_DELAY_MS = 700;
+const SPLASH_MAX_WAIT_MS = 4500;
 
 const CONFETTI_PIECES = [
   { left: "8%", delay: "0s", duration: "4.2s", color: "#a8b5a2", size: 8 },
@@ -56,57 +56,61 @@ function CelebrationConfetti() {
   );
 }
 
+async function waitForSplashToFinish() {
+  const start = Date.now();
+
+  while (Date.now() - start < SPLASH_MAX_WAIT_MS) {
+    if (sessionStorage.getItem(SPLASH_KEY)) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 100);
+    });
+  }
+}
+
 export function CelebrationModal() {
   const [open, setOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const hasScheduled = useRef(false);
 
   useEffect(() => {
+    if (hasScheduled.current) {
+      return;
+    }
+
     if (localStorage.getItem(STORAGE_KEY)) {
       return;
     }
 
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
+    hasScheduled.current = true;
+    let cancelled = false;
     let openTimer: number | undefined;
 
-    const openModal = () => {
-      const delay = sessionStorage.getItem(SPLASH_KEY)
-        ? RETURN_VISIT_DELAY_MS
-        : FIRST_VISIT_DELAY_MS;
+    void waitForSplashToFinish().then(() => {
+      if (cancelled || localStorage.getItem(STORAGE_KEY)) {
+        return;
+      }
 
       openTimer = window.setTimeout(() => {
+        if (cancelled || localStorage.getItem(STORAGE_KEY)) {
+          return;
+        }
+
         setOpen(true);
-        if (!reducedMotion) {
+
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           setShowConfetti(true);
         }
-      }, delay);
-    };
-
-    if (sessionStorage.getItem(SPLASH_KEY)) {
-      openModal();
-      return () => {
-        if (openTimer) window.clearTimeout(openTimer);
-      };
-    }
-
-    const poll = window.setInterval(() => {
-      if (sessionStorage.getItem(SPLASH_KEY)) {
-        window.clearInterval(poll);
-        openModal();
-      }
-    }, 200);
-
-    const fallback = window.setTimeout(() => {
-      window.clearInterval(poll);
-      openModal();
-    }, 4000);
+      }, POST_SPLASH_DELAY_MS);
+    });
 
     return () => {
-      window.clearInterval(poll);
-      window.clearTimeout(fallback);
-      if (openTimer) window.clearTimeout(openTimer);
+      cancelled = true;
+      if (openTimer) {
+        window.clearTimeout(openTimer);
+      }
     };
   }, []);
 
@@ -120,7 +124,10 @@ export function CelebrationModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="relative max-w-md overflow-hidden border border-sage/25 text-center">
+      <DialogContent
+        overlayClassName="z-[110]"
+        className="relative z-[111] max-w-md overflow-hidden border border-sage/25 text-center"
+      >
         {showConfetti ? <CelebrationConfetti /> : null}
 
         <div className="celebration-modal-enter relative z-10 flex flex-col items-center">
@@ -161,7 +168,9 @@ export function CelebrationModal() {
 
           <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
             <Button className="min-h-11 w-full sm:w-auto" asChild>
-              <Link href="/props">Browse the collection</Link>
+              <Link href="/props" onClick={() => handleOpenChange(false)}>
+                Browse the collection
+              </Link>
             </Button>
             <Button
               variant="outline"
