@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/db";
-import { bookings, items } from "@/lib/db/schema";
+import { bookings, categories, items } from "@/lib/db/schema";
 
 function formatDate(value: Date | string) {
   return typeof value === "string" ? value : value.toISOString().slice(0, 10);
@@ -21,6 +21,10 @@ export async function GET() {
         id: bookings.id,
         itemId: bookings.itemId,
         itemName: items.name,
+        categoryId: categories.id,
+        categoryName: categories.name,
+        categorySlug: categories.slug,
+        categorySortOrder: categories.sortOrder,
         eventDate: bookings.eventDate,
         status: bookings.status,
         customerName: bookings.customerName,
@@ -33,7 +37,8 @@ export async function GET() {
       })
       .from(bookings)
       .innerJoin(items, eq(bookings.itemId, items.id))
-      .orderBy(desc(bookings.createdAt));
+      .innerJoin(categories, eq(items.categoryId, categories.id))
+      .orderBy(desc(bookings.eventDate), desc(bookings.createdAt));
 
     return NextResponse.json({
       bookings: rows.map((row) => ({
