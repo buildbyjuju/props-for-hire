@@ -32,17 +32,6 @@ export type AdminBooking = {
   createdAt: string;
 };
 
-export type DateBlock = {
-  id: string;
-  itemId: string;
-  itemName: string;
-  eventDate: string;
-  selectedSize: string | null;
-  selectedSets: string | null;
-  note: string | null;
-  createdAt: string;
-};
-
 export function formatBookingStatus(status: string) {
   if (status === "pending_confirmation") {
     return "Pending confirmation";
@@ -56,14 +45,4 @@ export function bookingVariantLabel(booking: AdminBooking) {
     booking.selectedSets ? `Sets: ${booking.selectedSets}` : null,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : null;
-}
-
-export function blockVariantLabel(block: DateBlock) {
-  if (block.selectedSize) {
-    return `Size: ${block.selectedSize}`;
-  }
-  if (block.selectedSets) {
-    return `Sets: ${block.selectedSets}`;
-  }
-  return "Entire item";
 }
