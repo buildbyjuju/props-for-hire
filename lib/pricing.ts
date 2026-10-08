@@ -5,8 +5,8 @@ import { formatPrice } from "@/lib/utils";
 /** Flat hire price per event (list price before any promotion) */
 export const HIRE_PRICE_CENTS = 5000;
 
-/** Percentage off hire fees only — bonds are excluded */
-export const HIRE_DISCOUNT_PERCENT = 20;
+/** Percentage off hire fees only — bonds are excluded. Set to 0 to disable. */
+export const HIRE_DISCOUNT_PERCENT = 0;
 
 export function applyHireDiscount(listPriceCents: number): number {
   return Math.round(listPriceCents * (100 - HIRE_DISCOUNT_PERCENT) / 100);
