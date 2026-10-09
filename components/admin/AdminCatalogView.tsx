@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { toast } from "sonner";
 
 type CatalogCategory = {
@@ -112,142 +112,17 @@ export function AdminCatalogView({ onChanged }: { onChanged: () => void }) {
           Website catalogue
         </h2>
         <p className="mt-2 text-sm font-light text-foreground-soft">
-          Add categories and items here. New items go live on the public website
-          as soon as you save them.
+          Add items here. Choose an existing category or create a new one — the
+          item goes live under that category on the website.
         </p>
       </section>
 
-      <AddCategoryForm onCreated={handleCatalogChanged} />
       <AddItemForm categories={categories} onCreated={handleCatalogChanged} />
       <ExistingItems
         categories={categories}
         onChanged={handleCatalogChanged}
       />
     </div>
-  );
-}
-
-function AddCategoryForm({ onCreated }: { onCreated: () => void }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [sortOrder, setSortOrder] = useState("0");
-  const [imageUrl, setImageUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handlePhoto(file: File | null) {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const url = await uploadImage(file);
-      setImageUrl(url);
-      toast.success("Category photo uploaded");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description,
-          sortOrder: Number.parseInt(sortOrder, 10) || 0,
-          imageUrl: imageUrl || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not create category");
-        return;
-      }
-      toast.success("Category created");
-      setName("");
-      setDescription("");
-      setSortOrder("0");
-      setImageUrl("");
-      onCreated();
-    } catch {
-      toast.error("Could not create category");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <section className="rounded-3xl bg-cream p-5 shadow-luxury sm:p-6">
-      <h3 className="font-serif text-xl font-light text-foreground">
-        Add category
-      </h3>
-      <p className="mt-2 text-sm font-light text-foreground-soft">
-        Choose where new items will live on the website (for example Backdrops
-        or Marquees).
-      </p>
-      <form onSubmit={(e) => void handleSubmit(e)} className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="cat-name">Category name</Label>
-          <Input
-            id="cat-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            placeholder="e.g. Backdrops"
-          />
-        </div>
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="cat-description">Description</Label>
-          <Textarea
-            id="cat-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            placeholder="Short description shown on the website"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="cat-sort">Sort order</Label>
-          <Input
-            id="cat-sort"
-            type="number"
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="cat-photo">Category photo</Label>
-          <Input
-            id="cat-photo"
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            onChange={(e) => void handlePhoto(e.target.files?.[0] ?? null)}
-          />
-        </div>
-        {imageUrl ? (
-          <div className="relative h-32 overflow-hidden rounded-2xl bg-warm-white sm:col-span-2">
-            <Image
-              src={imageUrl}
-              alt="Category preview"
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-        ) : null}
-        <div className="sm:col-span-2">
-          <Button type="submit" disabled={submitting || uploading || !name.trim()}>
-            {submitting ? "Saving..." : "Add category"}
-          </Button>
-        </div>
-      </form>
-    </section>
   );
 }
 
@@ -258,7 +133,13 @@ function AddItemForm({
   categories: CatalogCategory[];
   onCreated: () => void;
 }) {
+  const [categoryMode, setCategoryMode] = useState<"existing" | "create">(
+    categories.length > 0 ? "existing" : "create",
+  );
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [newCategoryImageUrl, setNewCategoryImageUrl] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [priceDollars, setPriceDollars] = useState("");
@@ -274,10 +155,10 @@ function AddItemForm({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!categoryId && categories[0]?.id) {
+    if (categoryMode === "existing" && !categoryId && categories[0]?.id) {
       setCategoryId(categories[0].id);
     }
-  }, [categories, categoryId]);
+  }, [categories, categoryId, categoryMode]);
 
   const sizeOptions = useMemo(() => linesToList(sizesText), [sizesText]);
   const setOptions = useMemo(() => linesToList(setsText), [setsText]);
@@ -301,17 +182,58 @@ function AddItemForm({
     }
   }
 
+  async function handleCategoryPhoto(file: File | null) {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setNewCategoryImageUrl(url);
+      toast.success("Category photo uploaded");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function addVariantRow() {
     const nextLabel = sizeOptions[0] || setOptions[0] || "";
     setVariantRows((current) => [...current, { label: nextLabel, dollars: "" }]);
   }
 
+  async function resolveCategoryId(): Promise<string | null> {
+    if (categoryMode === "existing") {
+      if (!categoryId) {
+        toast.error("Choose a category");
+        return null;
+      }
+      return categoryId;
+    }
+
+    if (!newCategoryName.trim()) {
+      toast.error("Enter a name for the new category");
+      return null;
+    }
+
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim() || newCategoryName.trim(),
+        imageUrl: newCategoryImageUrl || undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.error ?? "Could not create category");
+      return null;
+    }
+    return data.category.id as string;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!categoryId) {
-      toast.error("Add a category first");
-      return;
-    }
     const priceCents = dollarsToCents(priceDollars);
     if (priceCents === null) {
       toast.error("Enter a valid hire price");
@@ -343,11 +265,14 @@ function AddItemForm({
 
     setSubmitting(true);
     try {
+      const resolvedCategoryId = await resolveCategoryId();
+      if (!resolvedCategoryId) return;
+
       const res = await fetch("/api/admin/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          categoryId,
+          categoryId: resolvedCategoryId,
           name,
           description,
           priceCents,
@@ -379,6 +304,10 @@ function AddItemForm({
       setSelectionLabel("");
       setImageUrls([]);
       setVariantRows([]);
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+      setNewCategoryImageUrl("");
+      setCategoryMode("existing");
       onCreated();
     } catch {
       toast.error("Could not create item");
@@ -393,34 +322,118 @@ function AddItemForm({
         Add item
       </h3>
       <p className="mt-2 text-sm font-light text-foreground-soft">
-        Pick a category, add photos and details, then save — it appears on the
-        hire collection immediately.
+        Choose or create a category, then add photos and details. The item goes
+        live under that category immediately.
       </p>
 
-      {categories.length === 0 ? (
-        <p className="mt-5 text-sm font-light text-foreground-soft">
-          Create a category above before adding items.
-        </p>
-      ) : (
-        <form
-          onSubmit={(e) => void handleSubmit(e)}
-          className="mt-5 grid gap-4 sm:grid-cols-2"
-        >
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="item-category">Category</Label>
-            <select
-              id="item-category"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              required
-              className="flex h-11 w-full rounded-2xl border border-sage/30 bg-warm-white px-3 text-sm font-light text-foreground"
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className="mt-5 grid gap-4 sm:grid-cols-2"
+      >
+          <div className="space-y-3 sm:col-span-2">
+            <Label>Category</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCategoryMode("existing")}
+                disabled={categories.length === 0}
+                className={cn(
+                  "h-11 rounded-2xl border text-sm",
+                  categoryMode === "existing"
+                    ? "border-sage bg-sage/20 font-medium text-foreground"
+                    : "border-sage/30 bg-warm-white font-light text-foreground-soft",
+                  categories.length === 0 && "opacity-50",
+                )}
+              >
+                Choose a category
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryMode("create")}
+                className={cn(
+                  "h-11 rounded-2xl border text-sm",
+                  categoryMode === "create"
+                    ? "border-sage bg-sage/20 font-medium text-foreground"
+                    : "border-sage/30 bg-warm-white font-light text-foreground-soft",
+                )}
+              >
+                Create a category
+              </button>
+            </div>
+
+            {categoryMode === "existing" ? (
+              <div className="space-y-2">
+                <Label htmlFor="item-category">Existing category</Label>
+                <select
+                  id="item-category"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  required={categoryMode === "existing"}
+                  className="flex h-11 w-full rounded-2xl border border-sage/30 bg-warm-white px-3 text-sm font-light text-foreground"
+                >
+                  {categories.length === 0 ? (
+                    <option value="">No categories yet</option>
+                  ) : (
+                    categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-xs font-light text-foreground-soft">
+                  e.g. Neon Signs, Backdrops, Cutouts
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 rounded-2xl border border-sage/20 bg-warm-white p-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="new-cat-name">New category name</Label>
+                  <Input
+                    id="new-cat-name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    required={categoryMode === "create"}
+                    placeholder="e.g. Neon Signs"
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="new-cat-description">
+                    Category description
+                  </Label>
+                  <Textarea
+                    id="new-cat-description"
+                    value={newCategoryDescription}
+                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                    rows={2}
+                    placeholder="Shown on the website collection page"
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="new-cat-photo">Category photo (optional)</Label>
+                  <Input
+                    id="new-cat-photo"
+                    type="file"
+                    accept="image/*"
+                    disabled={uploading}
+                    onChange={(e) =>
+                      void handleCategoryPhoto(e.target.files?.[0] ?? null)
+                    }
+                  />
+                </div>
+                {newCategoryImageUrl ? (
+                  <div className="relative h-28 overflow-hidden rounded-2xl bg-cream sm:col-span-2">
+                    <Image
+                      src={newCategoryImageUrl}
+                      alt="New category preview"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2 sm:col-span-2">
@@ -590,55 +603,121 @@ function AddItemForm({
             )}
           </div>
 
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="item-photos">Photos</Label>
-            <Input
-              id="item-photos"
-              type="file"
-              accept="image/*"
-              multiple
-              disabled={uploading}
-              onChange={(e) => void handlePhotos(e.target.files)}
-            />
-            {imageUrls.length > 0 ? (
-              <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {imageUrls.map((url) => (
-                  <li key={url} className="relative aspect-square overflow-hidden rounded-2xl bg-warm-white">
-                    <Image
-                      src={url}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-2 rounded-full bg-cream/90 px-2 py-1 text-[10px] uppercase tracking-wider"
-                      onClick={() =>
-                        setImageUrls((current) =>
-                          current.filter((entry) => entry !== url),
-                        )
-                      }
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+          <PhotoPicker
+            imageUrls={imageUrls}
+            setImageUrls={setImageUrls}
+            uploading={uploading}
+            onUploadFiles={(files) => void handlePhotos(files)}
+          />
 
           <div className="sm:col-span-2">
             <Button
               type="submit"
-              disabled={submitting || uploading || categories.length === 0}
+              disabled={
+                submitting ||
+                uploading ||
+                (categoryMode === "existing" && categories.length === 0)
+              }
             >
               {submitting ? "Publishing..." : "Add item to website"}
             </Button>
           </div>
         </form>
-      )}
     </section>
+  );
+}
+
+function PhotoPicker({
+  imageUrls,
+  setImageUrls,
+  uploading,
+  onUploadFiles,
+}: {
+  imageUrls: string[];
+  setImageUrls: React.Dispatch<React.SetStateAction<string[]>>;
+  uploading: boolean;
+  onUploadFiles: (files: FileList | null) => void;
+}) {
+  const [urlInput, setUrlInput] = useState("");
+
+  function addUrl() {
+    const url = urlInput.trim();
+    if (!url) return;
+    try {
+      // Allow absolute URLs and site-relative paths like /props/...
+      if (!url.startsWith("/") && !/^https?:\/\//i.test(url)) {
+        toast.error("Enter a full image URL or a path starting with /");
+        return;
+      }
+      setImageUrls((current) =>
+        current.includes(url) ? current : [...current, url],
+      );
+      setUrlInput("");
+      toast.success("Photo added");
+    } catch {
+      toast.error("Could not add that image URL");
+    }
+  }
+
+  return (
+    <div className="space-y-3 sm:col-span-2">
+      <Label htmlFor="item-photos">Photos</Label>
+      <Input
+        id="item-photos"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+        disabled={uploading}
+        onChange={(e) => onUploadFiles(e.target.files)}
+      />
+      <p className="text-xs font-light text-foreground-soft">
+        JPG, PNG or WebP under 4MB. If upload fails, paste an image URL below.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          placeholder="https://… or /props/backdrops/photo.jpg"
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={addUrl}
+          disabled={!urlInput.trim()}
+        >
+          Add URL
+        </Button>
+      </div>
+      {imageUrls.length > 0 ? (
+        <ul className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {imageUrls.map((url) => (
+            <li
+              key={url}
+              className="relative aspect-square overflow-hidden rounded-2xl bg-warm-white"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-2 rounded-full bg-cream/90 px-2 py-1 text-[10px] uppercase tracking-wider"
+                onClick={() =>
+                  setImageUrls((current) =>
+                    current.filter((entry) => entry !== url),
+                  )
+                }
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 

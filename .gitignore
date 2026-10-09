@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local catalogue uploads (dev fallback when Blob is not configured)
+/public/uploads/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

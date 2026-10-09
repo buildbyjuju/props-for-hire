@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminCalendarView } from "@/components/admin/AdminCalendarView";
 import { AdminCatalogView } from "@/components/admin/AdminCatalogView";
 import { AdminEventsView } from "@/components/admin/AdminEventsView";
+import { AdminInvoiceView } from "@/components/admin/AdminInvoiceView";
 import type { AdminBooking, AdminCategory } from "@/components/admin/admin-types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type AdminTab = "calendar" | "events" | "catalog";
+type AdminTab = "calendar" | "events" | "catalog" | "invoices";
 
 type ApiCategory = {
   id: string;
@@ -89,6 +90,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { id: "events", label: "Events" },
     { id: "calendar", label: "Calendar" },
     { id: "catalog", label: "Catalogue" },
+    { id: "invoices", label: "Invoices" },
   ];
 
   const title =
@@ -96,7 +98,11 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       ? "Events"
       : tab === "calendar"
         ? "Hire calendar"
-        : "Catalogue";
+        : tab === "catalog"
+          ? "Catalogue"
+          : "Invoices";
+
+  const needsHireData = tab === "events" || tab === "calendar";
 
   return (
     <div className="min-h-[100dvh] bg-warm-white">
@@ -116,7 +122,12 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
+      <main
+        className={cn(
+          "mx-auto space-y-6 px-4 py-8 sm:px-6 sm:py-10",
+          tab === "invoices" ? "max-w-7xl" : "max-w-6xl",
+        )}
+      >
         <nav className="flex flex-wrap gap-2">
           {tabs.map((item) => (
             <button
@@ -135,7 +146,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           ))}
         </nav>
 
-        {loading && tab !== "catalog" ? (
+        {loading && needsHireData ? (
           <p className="text-sm font-light text-foreground-soft">Loading...</p>
         ) : null}
 
@@ -157,6 +168,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {tab === "catalog" ? (
           <AdminCatalogView onChanged={loadData} />
         ) : null}
+
+        {tab === "invoices" ? <AdminInvoiceView /> : null}
       </main>
     </div>
   );
