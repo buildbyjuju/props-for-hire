@@ -22,6 +22,8 @@ export type AdminBooking = {
   id: string;
   itemId: string;
   itemName: string;
+  itemSlug?: string;
+  priceCents?: number;
   categoryId: string;
   categoryName: string;
   categorySlug: string;

@@ -83,6 +83,26 @@ export function getVariantPriceCents(
   return calculateHirePriceCents(item.priceCents, setCount);
 }
 
+/** Hire fee for a booking (excludes bonds / delivery), matching checkout pricing */
+export function bookingHirePriceCents(booking: {
+  priceCents?: number | null;
+  itemSlug?: string | null;
+  selectedSize?: string | null;
+  selectedSets?: string | null;
+}): number {
+  const setCount = booking.selectedSets
+    ? parseSetCount(booking.selectedSets)
+    : 1;
+  return getVariantPriceCents(
+    {
+      slug: booking.itemSlug ?? undefined,
+      priceCents: booking.priceCents ?? HIRE_PRICE_CENTS,
+    },
+    booking.selectedSize || undefined,
+    setCount,
+  );
+}
+
 export function getListHirePriceCents(
   item: PriceableItem,
   variant?: string,

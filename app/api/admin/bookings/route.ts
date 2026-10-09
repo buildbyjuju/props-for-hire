@@ -22,6 +22,8 @@ export async function GET() {
         id: bookings.id,
         itemId: bookings.itemId,
         itemName: items.name,
+        itemSlug: items.slug,
+        priceCents: items.priceCents,
         categoryId: categories.id,
         categoryName: categories.name,
         categorySlug: categories.slug,

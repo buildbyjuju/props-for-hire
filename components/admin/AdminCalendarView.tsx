@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { addDays, format, parseISO, startOfToday } from "date-fns";
+import {
+  addDays,
+  format,
+  parseISO,
+  startOfMonth,
+  startOfToday,
+} from "date-fns";
 import {
   bookingVariantLabel,
   formatBookingStatus,
@@ -9,6 +15,7 @@ import {
   type AdminCategory,
 } from "@/components/admin/admin-types";
 import { AdminBookingForm } from "@/components/admin/AdminBookingForm";
+import { AdminMonthReport } from "@/components/admin/AdminMonthReport";
 import { Calendar } from "@/components/ui/calendar";
 import { getHireWindow } from "@/lib/pricing";
 
@@ -44,6 +51,7 @@ export function AdminCalendarView({
   onUpdated: () => void;
 }) {
   const [selected, setSelected] = useState<Date | undefined>(startOfToday());
+  const [month, setMonth] = useState(() => startOfMonth(startOfToday()));
 
   const selectedDateStr = selected
     ? format(selected, "yyyy-MM-dd")
@@ -92,6 +100,7 @@ export function AdminCalendarView({
     : null;
 
   return (
+    <div className="space-y-6">
     <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
       <section className="rounded-3xl bg-cream p-5 shadow-luxury sm:p-6">
         <h2 className="font-serif text-xl font-light text-foreground">
@@ -105,7 +114,8 @@ export function AdminCalendarView({
           mode="single"
           selected={selected}
           onSelect={setSelected}
-          defaultMonth={selected ?? startOfToday()}
+          month={month}
+          onMonthChange={setMonth}
           modifiers={{
             booked: eventDates,
             locked: lockedDates,
@@ -224,6 +234,9 @@ export function AdminCalendarView({
           </section>
         ) : null}
       </div>
+    </div>
+
+      <AdminMonthReport month={month} bookings={bookings} />
     </div>
   );
 }
