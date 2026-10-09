@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { AdminBookingForm } from "@/components/admin/AdminBookingForm";
+import { AdminEventHirePicker } from "@/components/admin/AdminEventHirePicker";
 import {
   bookingVariantLabel,
   formatBookingStatus,
@@ -249,22 +249,19 @@ export function AdminEventsView({
 
         <section className="rounded-3xl border-2 border-sage/40 bg-cream p-5 shadow-luxury sm:p-6">
           <h3 className="font-serif text-xl font-light text-foreground">
-            Hire products for this event
+            Select items to hire
           </h3>
           <p className="mt-2 text-sm font-light text-foreground-soft">
-            Pick any item from the website catalogue. Hired items lock the day
-            before, event day, and day after on the public website and admin
-            calendar.
+            Select the products you need for this event. Once hired, they lock
+            on the public website and show on the admin calendar as this event.
           </p>
           <div className="mt-5">
-            <AdminBookingForm
-              key={`${selectedEvent.id}-${hires.length}`}
+            <AdminEventHirePicker
+              key={selectedEvent.id}
               categories={categories}
               adminEventId={selectedEvent.id}
-              defaultDate={selectedEvent.eventDate}
-              defaultCustomerName={`Event — ${selectedEvent.title}`}
-              submitLabel="Hire item for this event"
-              onCreated={() => {
+              eventTitle={selectedEvent.title}
+              onHired={() => {
                 void loadEventDetail(selectedEvent.id);
                 void loadEvents();
                 onHiresChanged();
