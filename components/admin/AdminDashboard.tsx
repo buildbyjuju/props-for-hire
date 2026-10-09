@@ -2,13 +2,47 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminCalendarView } from "@/components/admin/AdminCalendarView";
+import { AdminCatalogView } from "@/components/admin/AdminCatalogView";
 import { AdminEventsView } from "@/components/admin/AdminEventsView";
 import type { AdminBooking, AdminCategory } from "@/components/admin/admin-types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type AdminTab = "calendar" | "events";
+type AdminTab = "calendar" | "events" | "catalog";
+
+type ApiCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  items: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    sizes?: string[];
+    setOptions?: string[];
+    quantityAvailable: number;
+    isActive?: boolean;
+  }>;
+};
+
+function toHireCategories(categories: ApiCategory[]): AdminCategory[] {
+  return categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    items: category.items
+      .filter((item) => item.isActive !== false)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        sizes: item.sizes ?? [],
+        setOptions: item.setOptions ?? [],
+        quantityAvailable: item.quantityAvailable,
+      })),
+  }));
+}
 
 export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<AdminTab>("events");
@@ -32,7 +66,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       const itemsData = await itemsRes.json();
 
       setBookings(bookingsData.bookings as AdminBooking[]);
-      setCategories(itemsData.categories as AdminCategory[]);
+      setCategories(toHireCategories(itemsData.categories as ApiCategory[]));
     } catch {
       toast.error("Could not load dashboard data");
     } finally {
@@ -54,7 +88,15 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const tabs: { id: AdminTab; label: string }[] = [
     { id: "events", label: "Events" },
     { id: "calendar", label: "Calendar" },
+    { id: "catalog", label: "Catalogue" },
   ];
+
+  const title =
+    tab === "events"
+      ? "Events"
+      : tab === "calendar"
+        ? "Hire calendar"
+        : "Catalogue";
 
   return (
     <div className="min-h-[100dvh] bg-warm-white">
@@ -65,7 +107,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               Dreamscape Admin
             </p>
             <h1 className="font-serif text-2xl font-light text-foreground">
-              {tab === "events" ? "Events" : "Hire calendar"}
+              {title}
             </h1>
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -93,7 +135,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           ))}
         </nav>
 
-        {loading ? (
+        {loading && tab !== "catalog" ? (
           <p className="text-sm font-light text-foreground-soft">Loading...</p>
         ) : null}
 
@@ -110,6 +152,10 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             categories={categories}
             onUpdated={loadData}
           />
+        ) : null}
+
+        {tab === "catalog" ? (
+          <AdminCatalogView onChanged={loadData} />
         ) : null}
       </main>
     </div>

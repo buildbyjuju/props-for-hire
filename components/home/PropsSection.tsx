@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/constants";
+import { getAllCategories } from "@/lib/catalog";
 import { SectionHeading } from "./SectionHeading";
 import { HireCategoryCard } from "@/components/props/HireCategoryCard";
 import { HorizontalScroll } from "@/components/ui/horizontal-scroll";
 import { Button } from "@/components/ui/button";
 
-export function PropsSection() {
+export async function PropsSection() {
+  const categories = await getAllCategories();
+
   return (
     <section id="props-hire" className="section-padding bg-cream">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -15,12 +17,16 @@ export function PropsSection() {
         />
 
         <HorizontalScroll className="mt-8 lg:mt-10">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <li
               key={cat.slug}
               className="w-[220px] shrink-0 snap-start sm:w-[240px] md:w-[260px]"
             >
-              <HireCategoryCard slug={cat.slug} name={cat.name} image={cat.image} />
+              <HireCategoryCard
+                slug={cat.slug}
+                name={cat.name}
+                image={cat.imageUrl || "/logo.png"}
+              />
             </li>
           ))}
         </HorizontalScroll>

@@ -7,6 +7,7 @@ import {
   date,
   uuid,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -39,6 +40,14 @@ export const items = pgTable("items", {
   imageUrls: text("image_urls").array().notNull().default([]),
   quantityAvailable: integer("quantity_available").notNull().default(1),
   isActive: boolean("is_active").notNull().default(true),
+  sizes: text("sizes").array().notNull().default([]),
+  setOptions: text("set_options").array().notNull().default([]),
+  setIncludes: text("set_includes"),
+  bondCents: integer("bond_cents"),
+  selectionLabel: text("selection_label"),
+  selectionDisplay: text("selection_display"),
+  colorImages: jsonb("color_images").$type<Record<string, string>>(),
+  variantPrices: jsonb("variant_prices").$type<Record<string, number>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

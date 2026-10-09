@@ -5,7 +5,7 @@ import { WorkSection } from "@/components/home/WorkSection";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
 import { QuoteSection } from "@/components/home/QuoteSection";
 
-export function HomePageContent() {
+export async function HomePageContent() {
   return (
     <>
       <HeroSection />

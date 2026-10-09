@@ -5,6 +5,17 @@ import { eq } from "drizzle-orm";
 import catalogData from "../data/items.json";
 import { categories, items } from "../lib/db/schema";
 
+type SeedItemMeta = {
+  sizes?: string[];
+  setOptions?: string[];
+  setIncludes?: string;
+  bondCents?: number;
+  selectionLabel?: string;
+  selectionDisplay?: string;
+  colorImages?: Record<string, string>;
+  variantPrices?: Record<string, number>;
+};
+
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -54,6 +65,25 @@ async function main() {
     }
 
     for (const item of cat.items) {
+      const meta = item as SeedItemMeta;
+      const values = {
+        name: item.name,
+        description: item.description,
+        priceCents: item.priceCents,
+        imageUrls: item.imageUrls,
+        quantityAvailable: item.quantityAvailable,
+        categoryId,
+        isActive: true,
+        sizes: meta.sizes ?? [],
+        setOptions: meta.setOptions ?? [],
+        setIncludes: meta.setIncludes ?? null,
+        bondCents: meta.bondCents ?? null,
+        selectionLabel: meta.selectionLabel ?? null,
+        selectionDisplay: meta.selectionDisplay ?? null,
+        colorImages: meta.colorImages ?? null,
+        variantPrices: meta.variantPrices ?? null,
+      };
+
       const existingItem = await db
         .select()
         .from(items)
@@ -63,45 +93,15 @@ async function main() {
       if (existingItem.length > 0) {
         await db
           .update(items)
-          .set({
-            name: item.name,
-            description: item.description,
-            priceCents: item.priceCents,
-            imageUrls: item.imageUrls,
-            quantityAvailable: item.quantityAvailable,
-            categoryId,
-            isActive: true,
-          })
+          .set(values)
           .where(eq(items.id, existingItem[0].id));
         console.log(`    Updated item: ${item.name}`);
       } else {
         await db.insert(items).values({
-          categoryId,
-          name: item.name,
+          ...values,
           slug: item.slug,
-          description: item.description,
-          priceCents: item.priceCents,
-          imageUrls: item.imageUrls,
-          quantityAvailable: item.quantityAvailable,
-          isActive: true,
         });
         console.log(`    Created item: ${item.name}`);
-      }
-    }
-
-    const seededSlugs = new Set(cat.items.map((item) => item.slug));
-    const categoryItems = await db
-      .select()
-      .from(items)
-      .where(eq(items.categoryId, categoryId));
-
-    for (const dbItem of categoryItems) {
-      if (!seededSlugs.has(dbItem.slug) && dbItem.isActive) {
-        await db
-          .update(items)
-          .set({ isActive: false })
-          .where(eq(items.id, dbItem.id));
-        console.log(`    Deactivated item: ${dbItem.name}`);
       }
     }
   }

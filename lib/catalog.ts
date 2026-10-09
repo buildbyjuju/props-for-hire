@@ -47,8 +47,9 @@ export type CatalogCategory = {
 };
 
 function categoryImage(slug: string, fallback: string | null) {
+  if (fallback) return fallback;
   const fromConstants = CATEGORIES.find((c) => c.slug === slug);
-  return fromConstants?.image ?? fallback;
+  return fromConstants?.image ?? null;
 }
 
 function mapJsonItem(
@@ -95,7 +96,20 @@ function mapDbItem(
   row: typeof items.$inferSelect,
   categorySlug: string,
 ): CatalogItem {
-  const meta = getCatalogItemMeta(row.slug);
+  const fileMeta = getCatalogItemMeta(row.slug);
+  const sizes = row.sizes?.length ? row.sizes : fileMeta?.sizes;
+  const setOptions = row.setOptions?.length
+    ? row.setOptions
+    : fileMeta?.setOptions;
+  const variantPrices =
+    row.variantPrices && Object.keys(row.variantPrices).length > 0
+      ? row.variantPrices
+      : fileMeta?.variantPrices;
+  const colorImages =
+    row.colorImages && Object.keys(row.colorImages).length > 0
+      ? row.colorImages
+      : fileMeta?.colorImages;
+
   return {
     id: row.id,
     categoryId: row.categoryId,
@@ -106,14 +120,14 @@ function mapDbItem(
     priceCents: row.priceCents,
     imageUrls: row.imageUrls,
     quantityAvailable: row.quantityAvailable,
-    sizes: meta?.sizes,
-    setOptions: meta?.setOptions,
-    setIncludes: meta?.setIncludes,
-    bondCents: meta?.bondCents,
-    selectionLabel: meta?.selectionLabel,
-    selectionDisplay: meta?.selectionDisplay,
-    colorImages: meta?.colorImages,
-    variantPrices: meta?.variantPrices,
+    sizes,
+    setOptions,
+    setIncludes: row.setIncludes ?? fileMeta?.setIncludes,
+    bondCents: row.bondCents ?? fileMeta?.bondCents,
+    selectionLabel: row.selectionLabel ?? fileMeta?.selectionLabel,
+    selectionDisplay: row.selectionDisplay ?? fileMeta?.selectionDisplay,
+    colorImages,
+    variantPrices,
   };
 }
 
@@ -142,6 +156,36 @@ export async function getAllCategories(): Promise<CatalogCategory[]> {
         .map((i) => mapDbItem(i, cat.slug)),
     }))
     .filter((cat) => cat.items.length > 0);
+}
+
+/** All DB categories (including empty) for admin catalog management */
+export async function getAdminCatalogCategories(): Promise<
+  (CatalogCategory & { itemCount: number })[]
+> {
+  if (!db) return [];
+
+  const cats = await db
+    .select()
+    .from(categories)
+    .orderBy(asc(categories.sortOrder));
+
+  const allItems = await db.select().from(items);
+
+  return cats.map((cat) => {
+    const catItems = allItems
+      .filter((i) => i.categoryId === cat.id)
+      .map((i) => mapDbItem(i, cat.slug));
+    return {
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description,
+      imageUrl: categoryImage(cat.slug, cat.imageUrl),
+      sortOrder: cat.sortOrder,
+      items: catItems,
+      itemCount: catItems.length,
+    };
+  });
 }
 
 export async function getCategoryBySlug(
