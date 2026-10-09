@@ -14,14 +14,12 @@ import {
   type AdminBooking,
   type AdminCategory,
 } from "@/components/admin/admin-types";
+import { AdminBookingEditor } from "@/components/admin/AdminBookingEditor";
 import { AdminBookingForm } from "@/components/admin/AdminBookingForm";
 import { AdminMonthReport } from "@/components/admin/AdminMonthReport";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getHireWindow } from "@/lib/pricing";
-import { toast } from "sonner";
 
 function formatDisplayDate(dateStr: string) {
   try {
@@ -178,6 +176,7 @@ export function AdminCalendarView({
                       <BookingCard
                         key={booking.id}
                         booking={booking}
+                        categories={categories}
                         onUpdated={onUpdated}
                         onDateMoved={(newDate) => {
                           setSelected(parseISO(newDate));
@@ -207,6 +206,7 @@ export function AdminCalendarView({
                         <BookingCard
                           key={booking.id}
                           booking={booking}
+                          categories={categories}
                           roleLabel={role}
                           onUpdated={onUpdated}
                           onDateMoved={(newDate) => {
@@ -260,50 +260,21 @@ export function AdminCalendarView({
 
 function BookingCard({
   booking,
+  categories,
   roleLabel,
   onUpdated,
   onDateMoved,
 }: {
   booking: AdminBooking;
+  categories: AdminCategory[];
   roleLabel?: string;
   onUpdated: () => void;
   onDateMoved: (newDate: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [newDate, setNewDate] = useState(booking.eventDate);
-  const [saving, setSaving] = useState(false);
 
   const variant = bookingVariantLabel(booking);
   const window = getHireWindow(booking.eventDate);
-
-  async function handleSaveDate() {
-    if (!newDate || newDate === booking.eventDate) {
-      setEditing(false);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/admin/bookings/${booking.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventDate: newDate }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not update date");
-        return;
-      }
-      toast.success("Hire date updated — public calendar locks moved");
-      setEditing(false);
-      onDateMoved(newDate);
-      onUpdated();
-    } catch {
-      toast.error("Could not update date");
-    } finally {
-      setSaving(false);
-    }
-  }
 
   return (
     <li className="rounded-2xl bg-warm-white px-4 py-3">
@@ -345,54 +316,24 @@ function BookingCard({
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => {
-              setNewDate(booking.eventDate);
-              setEditing(true);
-            }}
+            onClick={() => setEditing(true)}
           >
-            Edit date
+            Edit
           </Button>
         ) : null}
       </div>
 
       {editing ? (
-        <div className="mt-3 space-y-3 border-t border-sage/15 pt-3">
-          <div className="space-y-2">
-            <Label htmlFor={`edit-date-${booking.id}`}>New event date</Label>
-            <Input
-              id={`edit-date-${booking.id}`}
-              type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-            />
-            <p className="text-xs font-light text-foreground-soft">
-              Moves the hire and the day-before / day-after locks on the public
-              website.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              disabled={saving || !newDate}
-              onClick={() => void handleSaveDate()}
-            >
-              {saving ? "Saving..." : "Save date"}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={saving}
-              onClick={() => {
-                setEditing(false);
-                setNewDate(booking.eventDate);
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
+        <AdminBookingEditor
+          booking={booking}
+          categories={categories}
+          onCancel={() => setEditing(false)}
+          onSaved={(newDate) => {
+            setEditing(false);
+            onDateMoved(newDate);
+            onUpdated();
+          }}
+        />
       ) : null}
     </li>
   );
