@@ -14,6 +14,10 @@ export type AdminCategory = {
   items: AdminItem[];
 };
 
+export type HiredFrom = "Hoda" | "Jojo";
+
+export const HIRED_FROM_OPTIONS: HiredFrom[] = ["Hoda", "Jojo"];
+
 export type AdminBooking = {
   id: string;
   itemId: string;
@@ -31,6 +35,7 @@ export type AdminBooking = {
   notes: string | null;
   selectedSize: string | null;
   selectedSets: string | null;
+  hiredFrom?: string | null;
   createdAt: string;
 };
 

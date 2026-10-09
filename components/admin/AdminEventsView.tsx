@@ -38,6 +38,7 @@ type EventHire = Pick<
   | "customerEmail"
   | "selectedSize"
   | "selectedSets"
+  | "hiredFrom"
   | "notes"
   | "createdAt"
 >;
@@ -297,6 +298,7 @@ export function AdminEventsView({
                       </p>
                       <p className="mt-1 text-xs uppercase tracking-wider text-sage">
                         {hire.categoryName} · {formatBookingStatus(hire.status)}
+                        {hire.hiredFrom ? ` · ${hire.hiredFrom}` : ""}
                       </p>
                       {variant ? (
                         <p className="mt-1 text-xs font-light text-foreground-soft">

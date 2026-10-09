@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AdminCategory, AdminItem } from "@/components/admin/admin-types";
+import {
+  HIRED_FROM_OPTIONS,
+  type AdminCategory,
+  type AdminItem,
+  type HiredFrom,
+} from "@/components/admin/admin-types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +35,7 @@ export function AdminEventHirePicker({
   const [variants, setVariants] = useState<
     Record<string, { selectedSize: string; selectedSets: string }>
   >({});
+  const [hiredFrom, setHiredFrom] = useState<HiredFrom | "">("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -88,6 +94,10 @@ export function AdminEventHirePicker({
       toast.error("Select at least one item");
       return;
     }
+    if (!hiredFrom) {
+      toast.error("Choose Hoda or Jojo");
+      return;
+    }
 
     for (const selection of selections) {
       if (selection.item.sizes.length > 0 && !selection.selectedSize) {
@@ -116,6 +126,7 @@ export function AdminEventHirePicker({
             notes: notes.trim() || undefined,
             selectedSize: selection.selectedSize || undefined,
             selectedSets: selection.selectedSets || undefined,
+            hiredFrom,
           }),
         });
         const data = await res.json();
@@ -134,6 +145,7 @@ export function AdminEventHirePicker({
         );
         setSelectedIds(new Set());
         setVariants({});
+        setHiredFrom("");
         setNotes("");
         onHired();
       }
@@ -270,6 +282,30 @@ export function AdminEventHirePicker({
             </div>
           ),
         )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Hired from</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {HIRED_FROM_OPTIONS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setHiredFrom(option)}
+              className={cn(
+                "h-11 rounded-2xl border text-sm",
+                hiredFrom === option
+                  ? "border-sage bg-sage/20 font-medium text-foreground"
+                  : "border-sage/30 bg-warm-white font-light text-foreground-soft",
+              )}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs font-light text-foreground-soft">
+          Choose which end this hire came from
+        </p>
       </div>
 
       <div className="space-y-2">

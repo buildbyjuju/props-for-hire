@@ -44,6 +44,7 @@ export async function GET(_request: Request, context: RouteContext) {
         customerEmail: bookings.customerEmail,
         selectedSize: bookings.selectedSize,
         selectedSets: bookings.selectedSets,
+        hiredFrom: bookings.hiredFrom,
         notes: bookings.notes,
         createdAt: bookings.createdAt,
       })

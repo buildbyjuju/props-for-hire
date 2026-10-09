@@ -66,6 +66,8 @@ export const bookings = pgTable("bookings", {
   customerName: text("customer_name"),
   selectedSize: text("selected_size"),
   selectedSets: text("selected_sets"),
+  /** Which end hired this item: Hoda or Jojo (admin calendar / events) */
+  hiredFrom: text("hired_from"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

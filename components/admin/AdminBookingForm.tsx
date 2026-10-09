@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdminCategory, AdminItem } from "@/components/admin/admin-types";
+import {
+  HIRED_FROM_OPTIONS,
+  type AdminCategory,
+  type AdminItem,
+  type HiredFrom,
+} from "@/components/admin/admin-types";
 import { toast } from "sonner";
 
 export function AdminBookingForm({
@@ -32,6 +37,7 @@ export function AdminBookingForm({
   const [customerEmail, setCustomerEmail] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedSets, setSelectedSets] = useState("");
+  const [hiredFrom, setHiredFrom] = useState<HiredFrom | "">("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -50,6 +56,10 @@ export function AdminBookingForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!hiredFrom) {
+      toast.error("Choose Hoda or Jojo");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -66,6 +76,7 @@ export function AdminBookingForm({
           notes,
           selectedSize: selectedSize || undefined,
           selectedSets: selectedSets || undefined,
+          hiredFrom: hiredFrom || undefined,
           adminEventId: adminEventId || undefined,
         }),
       });
@@ -84,6 +95,7 @@ export function AdminBookingForm({
       setItemId("");
       setSelectedSize("");
       setSelectedSets("");
+      setHiredFrom("");
       setNotes("");
       if (!isEventHire) {
         setCustomerName("");
@@ -126,6 +138,29 @@ export function AdminBookingForm({
             </optgroup>
           ))}
         </select>
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <Label>Hired from</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {HIRED_FROM_OPTIONS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setHiredFrom(option)}
+              className={
+                hiredFrom === option
+                  ? "h-11 rounded-2xl border border-sage bg-sage/20 text-sm font-medium text-foreground"
+                  : "h-11 rounded-2xl border border-sage/30 bg-warm-white text-sm font-light text-foreground-soft"
+              }
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs font-light text-foreground-soft">
+          Choose which end this hire came from
+        </p>
       </div>
 
       {!isEventHire ? (

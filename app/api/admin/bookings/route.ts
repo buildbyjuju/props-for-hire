@@ -35,6 +35,7 @@ export async function GET() {
         notes: bookings.notes,
         selectedSize: bookings.selectedSize,
         selectedSets: bookings.selectedSets,
+        hiredFrom: bookings.hiredFrom,
         stripeSessionId: bookings.stripeSessionId,
         createdAt: bookings.createdAt,
       })
@@ -76,9 +77,19 @@ export async function POST(request: Request) {
     const selectedSize = body.selectedSize as string | undefined;
     const selectedSets = body.selectedSets as string | undefined;
     const adminEventId = body.adminEventId as string | undefined;
+    const hiredFromRaw = (body.hiredFrom as string | undefined)?.trim();
+    const hiredFrom =
+      hiredFromRaw === "Hoda" || hiredFromRaw === "Jojo" ? hiredFromRaw : null;
 
     if (!itemId) {
       return NextResponse.json({ error: "Item is required" }, { status: 400 });
+    }
+
+    if (!hiredFrom) {
+      return NextResponse.json(
+        { error: "Choose who hired this — Hoda or Jojo" },
+        { status: 400 },
+      );
     }
 
     const database = requireDb();
@@ -147,6 +158,7 @@ export async function POST(request: Request) {
         notes: notes?.trim() || null,
         selectedSize: selectedSize?.trim() || null,
         selectedSets: selectedSets?.trim() || null,
+        hiredFrom,
       })
       .returning();
 
