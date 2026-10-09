@@ -67,7 +67,6 @@ export function AdminEventsView({
 }) {
   const [events, setEvents] = useState<AdminEventSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AdminEventSummary | null>(
     null,
   );
@@ -100,7 +99,10 @@ export function AdminEventsView({
       const res = await fetch(`/api/admin/events/${eventId}`);
       if (!res.ok) throw new Error("Failed to load event");
       const data = await res.json();
-      setSelectedEvent(data.event as AdminEventSummary);
+      setSelectedEvent({
+        ...(data.event as AdminEventSummary),
+        hireCount: (data.hires as EventHire[]).length,
+      });
       setHires(data.hires as EventHire[]);
     } catch {
       toast.error("Could not load event details");
@@ -115,14 +117,11 @@ export function AdminEventsView({
     });
   }, [loadEvents]);
 
-  useEffect(() => {
-    if (!selectedEventId) {
-      setSelectedEvent(null);
-      setHires([]);
-      return;
-    }
-    void loadEventDetail(selectedEventId);
-  }, [selectedEventId, loadEventDetail]);
+  async function openEvent(event: AdminEventSummary) {
+    setSelectedEvent(event);
+    setHires([]);
+    await loadEventDetail(event.id);
+  }
 
   async function handleCreateEvent(e: React.FormEvent) {
     e.preventDefault();
@@ -138,13 +137,17 @@ export function AdminEventsView({
         toast.error(data.error ?? "Could not create event");
         return;
       }
-      toast.success("Event created");
+
+      const created = data.event as AdminEventSummary;
+      toast.success("Event created — hire items below");
       setTitle("");
       setEventDate("");
       setLocation("");
       setDescription("");
+      setSelectedEvent(created);
+      setHires([]);
       await loadEvents();
-      setSelectedEventId(data.event.id as string);
+      await loadEventDetail(created.id);
     } catch {
       toast.error("Could not create event");
     } finally {
@@ -170,9 +173,8 @@ export function AdminEventsView({
     }
 
     toast.success("Event deleted");
-    if (selectedEventId === eventId) {
-      setSelectedEventId(null);
-    }
+    setSelectedEvent(null);
+    setHires([]);
     await loadEvents();
     onHiresChanged();
   }
@@ -185,20 +187,19 @@ export function AdminEventsView({
     });
 
     if (!res.ok) {
-      // Fall back: try notes-only route may reject status — use dedicated cancel if needed
-      toast.error("Could not remove hire. Updating booking status...");
+      toast.error("Could not remove hire");
       return;
     }
 
     toast.success("Hire removed and dates unlocked");
-    if (selectedEventId) {
-      await loadEventDetail(selectedEventId);
+    if (selectedEvent) {
+      await loadEventDetail(selectedEvent.id);
     }
     await loadEvents();
     onHiresChanged();
   }
 
-  if (selectedEventId && selectedEvent) {
+  if (selectedEvent) {
     const window = getHireWindow(selectedEvent.eventDate);
 
     return (
@@ -208,7 +209,10 @@ export function AdminEventsView({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setSelectedEventId(null)}
+            onClick={() => {
+              setSelectedEvent(null);
+              setHires([]);
+            }}
           >
             ← All events
           </Button>
@@ -243,17 +247,43 @@ export function AdminEventsView({
           </p>
         </section>
 
+        <section className="rounded-3xl border-2 border-sage/40 bg-cream p-5 shadow-luxury sm:p-6">
+          <h3 className="font-serif text-xl font-light text-foreground">
+            Hire products for this event
+          </h3>
+          <p className="mt-2 text-sm font-light text-foreground-soft">
+            Pick any item from the website catalogue. Hired items lock the day
+            before, event day, and day after on the public website and admin
+            calendar.
+          </p>
+          <div className="mt-5">
+            <AdminBookingForm
+              key={`${selectedEvent.id}-${hires.length}`}
+              categories={categories}
+              adminEventId={selectedEvent.id}
+              defaultDate={selectedEvent.eventDate}
+              defaultCustomerName={`Event — ${selectedEvent.title}`}
+              submitLabel="Hire item for this event"
+              onCreated={() => {
+                void loadEventDetail(selectedEvent.id);
+                void loadEvents();
+                onHiresChanged();
+              }}
+            />
+          </div>
+        </section>
+
         <section className="rounded-3xl bg-cream p-5 shadow-luxury sm:p-6">
           <h3 className="font-serif text-xl font-light text-foreground">
-            Hired items for this event
+            Hired items ({hires.length})
           </h3>
           {detailLoading ? (
             <p className="mt-4 text-sm font-light text-foreground-soft">
-              Loading...
+              Loading hired items...
             </p>
           ) : hires.length === 0 ? (
             <p className="mt-4 text-sm font-light text-foreground-soft">
-              No items hired for this event yet.
+              No items hired yet. Use the form above to add products.
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
@@ -296,32 +326,6 @@ export function AdminEventsView({
             </ul>
           )}
         </section>
-
-        <section className="rounded-3xl bg-cream p-5 shadow-luxury sm:p-6">
-          <h3 className="font-serif text-xl font-light text-foreground">
-            Hire an item for this event
-          </h3>
-          <p className="mt-2 text-sm font-light text-foreground-soft">
-            Choose any item from the website catalogue. It will lock the day
-            before, event day, and day after on the public website and admin
-            calendar.
-          </p>
-          <div className="mt-5">
-            <AdminBookingForm
-              key={selectedEvent.id}
-              categories={categories}
-              adminEventId={selectedEvent.id}
-              defaultDate={selectedEvent.eventDate}
-              defaultCustomerName={`Event — ${selectedEvent.title}`}
-              submitLabel="Hire item for this event"
-              onCreated={() => {
-                void loadEventDetail(selectedEvent.id);
-                void loadEvents();
-                onHiresChanged();
-              }}
-            />
-          </div>
-        </section>
       </div>
     );
   }
@@ -333,8 +337,8 @@ export function AdminEventsView({
           Create event
         </h2>
         <p className="mt-2 text-sm font-light text-foreground-soft">
-          Add an event with date, location, and description. Then hire website
-          items for it.
+          Add an event with date, location, and description. After creating, you
+          can hire website products for it.
         </p>
         <form
           onSubmit={handleCreateEvent}
@@ -382,7 +386,7 @@ export function AdminEventsView({
           </div>
           <div className="sm:col-span-2">
             <Button type="submit" disabled={creating}>
-              {creating ? "Creating..." : "Create event"}
+              {creating ? "Creating..." : "Create event & hire items"}
             </Button>
           </div>
         </form>
@@ -392,6 +396,9 @@ export function AdminEventsView({
         <h2 className="font-serif text-xl font-light text-foreground">
           Your events
         </h2>
+        <p className="mt-2 text-sm font-light text-foreground-soft">
+          Open an event to hire products for it.
+        </p>
         {loading ? (
           <p className="mt-4 text-sm font-light text-foreground-soft">
             Loading...
@@ -406,7 +413,7 @@ export function AdminEventsView({
               <li key={event.id}>
                 <button
                   type="button"
-                  onClick={() => setSelectedEventId(event.id)}
+                  onClick={() => void openEvent(event)}
                   className="flex w-full flex-col rounded-2xl bg-warm-white px-4 py-4 text-left transition hover:bg-sage/10 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
@@ -419,7 +426,8 @@ export function AdminEventsView({
                   </div>
                   <p className="mt-2 text-xs uppercase tracking-wider text-sage sm:mt-0">
                     {event.hireCount}{" "}
-                    {event.hireCount === 1 ? "item hired" : "items hired"} →
+                    {event.hireCount === 1 ? "item hired" : "items hired"} ·
+                    Open to hire →
                   </p>
                 </button>
               </li>
