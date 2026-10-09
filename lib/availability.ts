@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import {
   addDays,
   eachDayOfInterval,
@@ -37,6 +37,8 @@ export type AvailabilityOptions = {
   includePendingReservations?: boolean;
   selectedSize?: string;
   selectedSets?: string;
+  /** Ignore this booking when checking availability (for date moves) */
+  excludeBookingId?: string;
 };
 
 /** Pickup, event, and return days for a booking on this event date */
@@ -170,6 +172,7 @@ async function getActiveBookingReservations(
   statuses: readonly (
     "pending" | "pending_confirmation" | "paid"
   )[] = CALENDAR_LOCK_STATUSES,
+  excludeBookingId?: string,
 ): Promise<BookingReservation[]> {
   const database = requireDb();
   const queryFrom = format(
@@ -178,6 +181,16 @@ async function getActiveBookingReservations(
   );
   const queryTo = format(addDays(to, PICKUP_DAYS_BEFORE_EVENT), "yyyy-MM-dd");
 
+  const conditions = [
+    eq(bookings.itemId, itemId),
+    inArray(bookings.status, [...statuses]),
+    gte(bookings.eventDate, queryFrom),
+    lte(bookings.eventDate, queryTo),
+  ];
+  if (excludeBookingId) {
+    conditions.push(ne(bookings.id, excludeBookingId));
+  }
+
   const rows = await database
     .select({
       eventDate: bookings.eventDate,
@@ -185,14 +198,7 @@ async function getActiveBookingReservations(
       selectedSets: bookings.selectedSets,
     })
     .from(bookings)
-    .where(
-      and(
-        eq(bookings.itemId, itemId),
-        inArray(bookings.status, [...statuses]),
-        gte(bookings.eventDate, queryFrom),
-        lte(bookings.eventDate, queryTo),
-      ),
-    );
+    .where(and(...conditions));
 
   return rows.map((row) => ({
     eventDate:
@@ -276,6 +282,7 @@ export async function getItemAvailability(
     from,
     to,
     statuses,
+    options?.excludeBookingId,
   );
   const manualBlocks = await getManualBlockReservations(itemId, from, to);
 
@@ -350,7 +357,10 @@ export async function getUnavailableDates(
 export async function isDateAvailable(
   itemId: string,
   dateStr: string,
-  options?: Pick<AvailabilityOptions, "selectedSize" | "selectedSets">,
+  options?: Pick<
+    AvailabilityOptions,
+    "selectedSize" | "selectedSets" | "excludeBookingId"
+  >,
 ): Promise<boolean> {
   const date = parseISO(dateStr);
   const catalogItem = await getItemById(itemId);
@@ -367,6 +377,7 @@ export async function isDateAvailable(
     includePendingReservations: true,
     selectedSize: options?.selectedSize,
     selectedSets: options?.selectedSets,
+    excludeBookingId: options?.excludeBookingId,
   });
   return !unavailable.includes(dateStr);
 }

@@ -16,8 +16,12 @@ import {
 } from "@/components/admin/admin-types";
 import { AdminBookingForm } from "@/components/admin/AdminBookingForm";
 import { AdminMonthReport } from "@/components/admin/AdminMonthReport";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getHireWindow } from "@/lib/pricing";
+import { toast } from "sonner";
 
 function formatDisplayDate(dateStr: string) {
   try {
@@ -171,7 +175,15 @@ export function AdminCalendarView({
                   </h3>
                   <ul className="mt-3 space-y-3">
                     {dayBookings.map((booking) => (
-                      <BookingCard key={booking.id} booking={booking} />
+                      <BookingCard
+                        key={booking.id}
+                        booking={booking}
+                        onUpdated={onUpdated}
+                        onDateMoved={(newDate) => {
+                          setSelected(parseISO(newDate));
+                          setMonth(startOfMonth(parseISO(newDate)));
+                        }}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -196,6 +208,11 @@ export function AdminCalendarView({
                           key={booking.id}
                           booking={booking}
                           roleLabel={role}
+                          onUpdated={onUpdated}
+                          onDateMoved={(newDate) => {
+                            setSelected(parseISO(newDate));
+                            setMonth(startOfMonth(parseISO(newDate)));
+                          }}
                         />
                       );
                     })}
@@ -244,40 +261,138 @@ export function AdminCalendarView({
 function BookingCard({
   booking,
   roleLabel,
+  onUpdated,
+  onDateMoved,
 }: {
   booking: AdminBooking;
   roleLabel?: string;
+  onUpdated: () => void;
+  onDateMoved: (newDate: string) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [newDate, setNewDate] = useState(booking.eventDate);
+  const [saving, setSaving] = useState(false);
+
   const variant = bookingVariantLabel(booking);
   const window = getHireWindow(booking.eventDate);
 
+  async function handleSaveDate() {
+    if (!newDate || newDate === booking.eventDate) {
+      setEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventDate: newDate }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update date");
+        return;
+      }
+      toast.success("Hire date updated — public calendar locks moved");
+      setEditing(false);
+      onDateMoved(newDate);
+      onUpdated();
+    } catch {
+      toast.error("Could not update date");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <li className="rounded-2xl bg-warm-white px-4 py-3">
-      <p className="font-serif text-lg font-light text-foreground">
-        {booking.itemName}
-      </p>
-      <p className="mt-1 text-xs uppercase tracking-wider text-sage">
-        {booking.categoryName} · {formatBookingStatus(booking.status)}
-        {booking.hiredFrom ? ` · ${booking.hiredFrom}` : ""}
-        {booking.adminEventTitle ? ` · ${booking.adminEventTitle}` : ""}
-        {roleLabel ? ` · ${roleLabel}` : ""}
-      </p>
-      {variant ? (
-        <p className="mt-1 text-xs font-light text-foreground-soft">{variant}</p>
-      ) : null}
-      <p className="mt-1 text-xs font-light text-foreground-soft">
-        Window: {formatShortDate(window.pickupDate)} →{" "}
-        {formatShortDate(window.eventDate)} →{" "}
-        {formatShortDate(window.returnDate)}
-      </p>
-      <p className="mt-2 text-sm text-foreground">
-        {booking.customerName ?? "No name"}
-        {booking.customerEmail ? ` · ${booking.customerEmail}` : ""}
-      </p>
-      {booking.notes ? (
-        <p className="mt-1 text-xs font-light text-foreground-soft">
-          Notes: {booking.notes}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="font-serif text-lg font-light text-foreground">
+            {booking.itemName}
+          </p>
+          <p className="mt-1 text-xs uppercase tracking-wider text-sage">
+            {booking.categoryName} · {formatBookingStatus(booking.status)}
+            {booking.hiredFrom ? ` · ${booking.hiredFrom}` : ""}
+            {booking.adminEventTitle ? ` · ${booking.adminEventTitle}` : ""}
+            {roleLabel ? ` · ${roleLabel}` : ""}
+          </p>
+          {variant ? (
+            <p className="mt-1 text-xs font-light text-foreground-soft">
+              {variant}
+            </p>
+          ) : null}
+          <p className="mt-1 text-xs font-light text-foreground-soft">
+            Event: {formatShortDate(booking.eventDate)} · Window:{" "}
+            {formatShortDate(window.pickupDate)} →{" "}
+            {formatShortDate(window.eventDate)} →{" "}
+            {formatShortDate(window.returnDate)}
+          </p>
+          <p className="mt-2 text-sm text-foreground">
+            {booking.customerName ?? "No name"}
+            {booking.customerEmail ? ` · ${booking.customerEmail}` : ""}
+          </p>
+          {booking.notes ? (
+            <p className="mt-1 text-xs font-light text-foreground-soft">
+              Notes: {booking.notes}
+            </p>
+          ) : null}
+        </div>
+
+        {!editing ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setNewDate(booking.eventDate);
+              setEditing(true);
+            }}
+          >
+            Edit date
+          </Button>
+        ) : null}
+      </div>
+
+      {editing ? (
+        <div className="mt-3 space-y-3 border-t border-sage/15 pt-3">
+          <div className="space-y-2">
+            <Label htmlFor={`edit-date-${booking.id}`}>New event date</Label>
+            <Input
+              id={`edit-date-${booking.id}`}
+              type="date"
+              value={newDate}
+              onChange={(e) => setNewDate(e.target.value)}
+            />
+            <p className="text-xs font-light text-foreground-soft">
+              Moves the hire and the day-before / day-after locks on the public
+              website.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving || !newDate}
+              onClick={() => void handleSaveDate()}
+            >
+              {saving ? "Saving..." : "Save date"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={saving}
+              onClick={() => {
+                setEditing(false);
+                setNewDate(booking.eventDate);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       ) : null}
     </li>
   );
