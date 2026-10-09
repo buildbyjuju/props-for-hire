@@ -377,7 +377,16 @@ export function AdminInvoiceView() {
 
             <div className="space-y-3 sm:col-span-2">
               <div className="flex items-center justify-between gap-3">
-                <Label>Items</Label>
+                <div>
+                  <Label>Items from website</Label>
+                  <p className="mt-1 text-xs font-light text-foreground-soft">
+                    Pick hire items like Black Plinth or Food Warmers — price and
+                    bond fill in automatically.
+                    {!loadingItems && allItems.length > 0
+                      ? ` ${allItems.length} items available.`
+                      : null}
+                  </p>
+                </div>
                 <Button
                   type="button"
                   size="sm"
@@ -393,7 +402,13 @@ export function AdminInvoiceView() {
               </div>
               {loadingItems ? (
                 <p className="text-sm font-light text-foreground-soft">
-                  Loading catalogue…
+                  Loading website hire items…
+                </p>
+              ) : null}
+              {!loadingItems && allItems.length === 0 ? (
+                <p className="rounded-2xl border border-sage/30 bg-warm-white px-4 py-3 text-sm text-foreground-soft">
+                  No hire items loaded. Check the Catalogue tab, then refresh this
+                  page.
                 </p>
               ) : null}
               <div className="space-y-3">
@@ -408,37 +423,47 @@ export function AdminInvoiceView() {
                       key={line.id}
                       className="space-y-2 rounded-2xl bg-warm-white p-3"
                     >
-                      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                        <select
-                          value={line.itemId}
-                          onChange={(e) =>
-                            applyCatalogItem(line.id, e.target.value)
-                          }
-                          className="flex h-11 w-full rounded-2xl border border-sage/30 bg-cream px-3 text-sm font-light text-foreground"
-                          required={!line.description.trim()}
-                        >
-                          <option value="">Select an item</option>
-                          {categories.map((category) => (
-                            <optgroup key={category.id} label={category.name}>
-                              {category.items.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.name}
-                                  {item.bondCents
-                                    ? ` · bond ${formatPrice(item.bondCents)}`
-                                    : ""}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeLine(line.id)}
-                        >
-                          Remove
-                        </Button>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-foreground-soft">
+                          Choose hire item
+                        </Label>
+                        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                          <select
+                            value={line.itemId}
+                            onChange={(e) =>
+                              applyCatalogItem(line.id, e.target.value)
+                            }
+                            className="flex h-11 w-full rounded-2xl border border-sage/40 bg-cream px-3 text-sm font-medium text-foreground"
+                            required={!line.description.trim()}
+                          >
+                            <option value="">
+                              Select from website items…
+                            </option>
+                            {categories.map((category) => (
+                              <optgroup
+                                key={category.id}
+                                label={category.name}
+                              >
+                                {category.items.map((item) => (
+                                  <option key={item.id} value={item.id}>
+                                    {item.name} · {formatPrice(item.priceCents)}
+                                    {item.bondCents
+                                      ? ` · bond ${formatPrice(item.bondCents)}`
+                                      : ""}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeLine(line.id)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </div>
 
                       {selectedItem && (hasSizes || hasSets) ? (

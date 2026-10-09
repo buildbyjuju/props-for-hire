@@ -1,9 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { asc, eq } from "drizzle-orm";
-import { getItemById } from "@/lib/catalog";
+import {
+  getAllCategories,
+  getItemById,
+} from "@/lib/catalog";
 import { requireAdminApi } from "@/lib/admin-auth";
-import { requireDb } from "@/lib/db";
+import { db, requireDb } from "@/lib/db";
 import { categories, items } from "@/lib/db/schema";
 import { slugify } from "@/lib/slug";
 
@@ -35,6 +38,37 @@ function parseVariantPrices(value: unknown): Record<string, number> | null {
   return Object.keys(result).length > 0 ? result : null;
 }
 
+function serializeWebsiteCatalog() {
+  return getAllCategories().then((catalog) =>
+    catalog.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description,
+      imageUrl: cat.imageUrl,
+      sortOrder: cat.sortOrder,
+      items: cat.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        description: item.description,
+        priceCents: item.priceCents,
+        imageUrls: item.imageUrls,
+        quantityAvailable: item.quantityAvailable,
+        isActive: true,
+        sizes: item.sizes ?? [],
+        setOptions: item.setOptions ?? [],
+        setIncludes: item.setIncludes ?? null,
+        bondCents: item.bondCents ?? null,
+        selectionLabel: item.selectionLabel ?? null,
+        selectionDisplay: item.selectionDisplay ?? null,
+        variantPrices: item.variantPrices ?? null,
+        createdAt: null,
+      })),
+    })),
+  );
+}
+
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) {
@@ -42,13 +76,26 @@ export async function GET() {
   }
 
   try {
-    const database = requireDb();
+    // Same hire catalogue the public website uses (DB when available, else items.json)
+    if (!db) {
+      return NextResponse.json({
+        categories: await serializeWebsiteCatalog(),
+      });
+    }
+
+    const database = db;
     const cats = await database
       .select()
       .from(categories)
       .orderBy(asc(categories.sortOrder));
 
     const allItems = await database.select().from(items);
+
+    if (cats.length === 0) {
+      return NextResponse.json({
+        categories: await serializeWebsiteCatalog(),
+      });
+    }
 
     const catalog = await Promise.all(
       cats.map(async (cat) => ({
@@ -86,10 +133,29 @@ export async function GET() {
       })),
     );
 
+    const activeCount = catalog.reduce(
+      (sum, cat) => sum + cat.items.filter((item) => item.isActive).length,
+      0,
+    );
+
+    // If the DB catalogue is empty, fall back to website hire items
+    if (activeCount === 0) {
+      return NextResponse.json({
+        categories: await serializeWebsiteCatalog(),
+      });
+    }
+
     return NextResponse.json({ categories: catalog });
   } catch (error) {
     console.error("Admin items list error:", error);
-    return NextResponse.json({ error: "Failed to load items" }, { status: 500 });
+    try {
+      return NextResponse.json({
+        categories: await serializeWebsiteCatalog(),
+      });
+    } catch (fallbackError) {
+      console.error("Website catalogue fallback error:", fallbackError);
+      return NextResponse.json({ error: "Failed to load items" }, { status: 500 });
+    }
   }
 }
 
