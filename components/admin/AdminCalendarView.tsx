@@ -245,6 +245,7 @@ function BookingCard({
       </p>
       <p className="mt-1 text-xs uppercase tracking-wider text-sage">
         {booking.categoryName} · {formatBookingStatus(booking.status)}
+        {booking.adminEventTitle ? ` · ${booking.adminEventTitle}` : ""}
         {roleLabel ? ` · ${roleLabel}` : ""}
       </p>
       {variant ? (

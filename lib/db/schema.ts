@@ -42,11 +42,23 @@ export const items = pgTable("items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const adminEvents = pgTable("admin_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  eventDate: date("event_date").notNull(),
+  location: text("location").notNull(),
+  description: text("description").notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const bookings = pgTable("bookings", {
   id: uuid("id").primaryKey().defaultRandom(),
   itemId: uuid("item_id")
     .notNull()
     .references(() => items.id, { onDelete: "cascade" }),
+  adminEventId: uuid("admin_event_id").references(() => adminEvents.id, {
+    onDelete: "set null",
+  }),
   eventDate: date("event_date").notNull(),
   status: bookingStatusEnum("status").notNull().default("pending"),
   stripeSessionId: text("stripe_session_id"),
@@ -95,15 +107,24 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
   bookings: many(bookings),
 }));
 
+export const adminEventsRelations = relations(adminEvents, ({ many }) => ({
+  bookings: many(bookings),
+}));
+
 export const bookingsRelations = relations(bookings, ({ one }) => ({
   item: one(items, {
     fields: [bookings.itemId],
     references: [items.id],
   }),
+  adminEvent: one(adminEvents, {
+    fields: [bookings.adminEventId],
+    references: [adminEvents.id],
+  }),
 }));
 
 export type Category = typeof categories.$inferSelect;
 export type Item = typeof items.$inferSelect;
+export type AdminEvent = typeof adminEvents.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type DateBlock = typeof dateBlocks.$inferSelect;
 export type QuoteRequest = typeof quoteRequests.$inferSelect;

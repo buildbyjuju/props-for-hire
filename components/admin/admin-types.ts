@@ -22,6 +22,8 @@ export type AdminBooking = {
   categoryName: string;
   categorySlug: string;
   categorySortOrder: number;
+  adminEventId?: string | null;
+  adminEventTitle?: string | null;
   eventDate: string;
   status: string;
   customerName: string | null;

@@ -12,16 +12,23 @@ export function AdminBookingForm({
   categories,
   defaultDate = "",
   lockDate = false,
+  adminEventId,
+  defaultCustomerName = "",
+  submitLabel = "Add hire for this day",
   onCreated,
 }: {
   categories: AdminCategory[];
   defaultDate?: string;
   lockDate?: boolean;
+  adminEventId?: string;
+  defaultCustomerName?: string;
+  submitLabel?: string;
   onCreated: () => void;
 }) {
+  const isEventHire = Boolean(adminEventId);
   const [itemId, setItemId] = useState("");
   const [eventDate, setEventDate] = useState(defaultDate);
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState(defaultCustomerName);
   const [customerEmail, setCustomerEmail] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedSets, setSelectedSets] = useState("");
@@ -51,12 +58,15 @@ export function AdminBookingForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId,
-          eventDate,
-          customerName,
-          customerEmail,
+          eventDate: isEventHire ? undefined : eventDate,
+          customerName: isEventHire
+            ? customerName || defaultCustomerName || undefined
+            : customerName,
+          customerEmail: customerEmail || undefined,
           notes,
           selectedSize: selectedSize || undefined,
           selectedSets: selectedSets || undefined,
+          adminEventId: adminEventId || undefined,
         }),
       });
 
@@ -66,14 +76,21 @@ export function AdminBookingForm({
         return;
       }
 
-      toast.success("Hire added");
-      setCustomerName("");
-      setCustomerEmail("");
+      toast.success(
+        isEventHire
+          ? "Item hired for this event — locked on public site and calendar"
+          : "Hire added",
+      );
+      setItemId("");
       setSelectedSize("");
       setSelectedSets("");
       setNotes("");
-      if (!lockDate) {
-        setEventDate("");
+      if (!isEventHire) {
+        setCustomerName("");
+        setCustomerEmail("");
+        if (!lockDate) {
+          setEventDate("");
+        }
       }
       onCreated();
     } catch {
@@ -86,7 +103,7 @@ export function AdminBookingForm({
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="hire-item">Item</Label>
+        <Label htmlFor="hire-item">Item from website</Label>
         <select
           id="hire-item"
           value={itemId}
@@ -111,37 +128,41 @@ export function AdminBookingForm({
         </select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="hire-date">Event date</Label>
-        <Input
-          id="hire-date"
-          type="date"
-          value={eventDate}
-          onChange={(e) => setEventDate(e.target.value)}
-          required
-          disabled={lockDate}
-        />
-      </div>
+      {!isEventHire ? (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="hire-date">Event date</Label>
+            <Input
+              id="hire-date"
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              required
+              disabled={lockDate}
+            />
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="hire-name">Customer name</Label>
-        <Input
-          id="hire-name"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          required
-        />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="hire-name">Customer name</Label>
+            <Input
+              id="hire-name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              required
+            />
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="hire-email">Customer email</Label>
-        <Input
-          id="hire-email"
-          type="email"
-          value={customerEmail}
-          onChange={(e) => setCustomerEmail(e.target.value)}
-        />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="hire-email">Customer email</Label>
+            <Input
+              id="hire-email"
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+            />
+          </div>
+        </>
+      ) : null}
 
       {hasSizes ? (
         <div className="space-y-2">
@@ -193,7 +214,7 @@ export function AdminBookingForm({
 
       <div className="sm:col-span-2">
         <Button type="submit" disabled={submitting || allItems.length === 0}>
-          {submitting ? "Adding..." : "Add hire for this day"}
+          {submitting ? "Adding..." : submitLabel}
         </Button>
       </div>
     </form>

@@ -8,6 +8,13 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+const ALLOWED_STATUSES = [
+  "pending",
+  "pending_confirmation",
+  "paid",
+  "cancelled",
+] as const;
+
 export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireAdminApi();
   if (!auth.ok) {
@@ -19,15 +26,38 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     const body = await request.json();
     const notes = body.notes as string | undefined;
+    const status = body.status as string | undefined;
 
-    if (notes === undefined) {
-      return NextResponse.json({ error: "Notes are required" }, { status: 400 });
+    if (notes === undefined && status === undefined) {
+      return NextResponse.json(
+        { error: "Nothing to update" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      status !== undefined &&
+      !ALLOWED_STATUSES.includes(status as (typeof ALLOWED_STATUSES)[number])
+    ) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+
+    const updates: {
+      notes?: string | null;
+      status?: (typeof ALLOWED_STATUSES)[number];
+    } = {};
+
+    if (notes !== undefined) {
+      updates.notes = notes.trim() || null;
+    }
+    if (status !== undefined) {
+      updates.status = status as (typeof ALLOWED_STATUSES)[number];
     }
 
     const database = requireDb();
     const [updated] = await database
       .update(bookings)
-      .set({ notes: notes.trim() || null })
+      .set(updates)
       .where(eq(bookings.id, id))
       .returning();
 
