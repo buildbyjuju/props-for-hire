@@ -1,7 +1,7 @@
 "use client";
 
 import { toPng } from "html-to-image";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InvoiceDocument } from "@/components/admin/InvoiceDocument";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,20 +14,120 @@ import {
   createInvoiceNumber,
   dollarsToCents,
   invoiceBalanceCents,
+  invoiceBondCents,
   invoiceTotalCents,
   type InvoiceDraft,
   type InvoiceLineItem,
 } from "@/lib/invoice";
+import {
+  getVariantPriceCents,
+  parseSetCount,
+} from "@/lib/pricing";
 import { cn, formatPrice } from "@/lib/utils";
 import { toast } from "sonner";
 
+type CatalogItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  priceCents: number;
+  bondCents: number | null;
+  sizes: string[];
+  setOptions: string[];
+  selectionLabel: string | null;
+  variantPrices: Record<string, number> | null;
+  isActive: boolean;
+};
+
+type CatalogCategory = {
+  id: string;
+  name: string;
+  items: CatalogItem[];
+};
+
+function buildLineDescription(
+  item: CatalogItem,
+  selectedSize: string,
+  selectedSets: string,
+) {
+  const parts = [item.name];
+  if (selectedSize) parts.push(selectedSize);
+  if (selectedSets) parts.push(selectedSets);
+  return parts.join(" · ");
+}
+
+function priceForSelection(
+  item: CatalogItem,
+  selectedSize: string,
+  selectedSets: string,
+) {
+  const setCount = selectedSets ? parseSetCount(selectedSets) : 1;
+  return getVariantPriceCents(
+    {
+      slug: item.slug,
+      priceCents: item.priceCents,
+      variantPrices: item.variantPrices ?? undefined,
+    },
+    selectedSize || undefined,
+    setCount,
+  );
+}
+
 export function AdminInvoiceView() {
   const [invoice, setInvoice] = useState<InvoiceDraft>(() => createEmptyInvoice());
+  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
   const [exporting, setExporting] = useState(false);
   const documentRef = useRef<HTMLDivElement>(null);
 
-  const total = useMemo(() => invoiceTotalCents(invoice), [invoice]);
+  const allItems = useMemo(
+    () => categories.flatMap((category) => category.items),
+    [categories],
+  );
+
+  const hireTotal = useMemo(() => invoiceTotalCents(invoice), [invoice]);
+  const bondTotal = useMemo(() => invoiceBondCents(invoice), [invoice]);
   const balance = useMemo(() => invoiceBalanceCents(invoice), [invoice]);
+
+  const loadItems = useCallback(async () => {
+    setLoadingItems(true);
+    try {
+      const res = await fetch("/api/admin/items");
+      if (!res.ok) throw new Error("Failed to load items");
+      const data = await res.json();
+      const next = (data.categories as CatalogCategory[]).map((category) => ({
+        id: category.id,
+        name: category.name,
+        items: (category.items ?? [])
+          .filter((item) => item.isActive !== false)
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            slug: item.slug,
+            description: item.description ?? "",
+            priceCents: item.priceCents,
+            bondCents: item.bondCents ?? null,
+            sizes: item.sizes ?? [],
+            setOptions: item.setOptions ?? [],
+            selectionLabel: item.selectionLabel ?? null,
+            variantPrices: item.variantPrices ?? null,
+            isActive: item.isActive !== false,
+          })),
+      }));
+      setCategories(next.filter((category) => category.items.length > 0));
+    } catch {
+      toast.error("Could not load catalogue items");
+    } finally {
+      setLoadingItems(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadItems();
+    });
+  }, [loadItems]);
 
   function updateInvoice(patch: Partial<InvoiceDraft>) {
     setInvoice((current) => ({ ...current, ...patch }));
@@ -40,6 +140,43 @@ export function AdminInvoiceView() {
         line.id === id ? { ...line, ...patch } : line,
       ),
     }));
+  }
+
+  function applyCatalogItem(
+    lineId: string,
+    itemId: string,
+    overrides: Partial<Pick<InvoiceLineItem, "selectedSize" | "selectedSets">> = {},
+  ) {
+    if (!itemId) {
+      updateLine(lineId, {
+        itemId: "",
+        description: "",
+        amountCents: 0,
+        bondCents: 0,
+        selectedSize: "",
+        selectedSets: "",
+      });
+      return;
+    }
+
+    const item = allItems.find((entry) => entry.id === itemId);
+    if (!item) return;
+
+    const selectedSize =
+      overrides.selectedSize ??
+      (item.sizes.length === 1 ? item.sizes[0] : "");
+    const selectedSets =
+      overrides.selectedSets ??
+      (item.setOptions.length === 1 ? item.setOptions[0] : "");
+
+    updateLine(lineId, {
+      itemId,
+      selectedSize,
+      selectedSets,
+      description: buildLineDescription(item, selectedSize, selectedSets),
+      amountCents: priceForSelection(item, selectedSize, selectedSets),
+      bondCents: item.bondCents ?? 0,
+    });
   }
 
   function removeLine(id: string) {
@@ -59,7 +196,10 @@ export function AdminInvoiceView() {
     }
     if (
       invoice.lineItems.every(
-        (line) => !line.description.trim() && line.amountCents <= 0,
+        (line) =>
+          !line.description.trim() &&
+          line.amountCents <= 0 &&
+          line.bondCents <= 0,
       )
     ) {
       toast.error("Add at least one invoice item");
@@ -109,8 +249,8 @@ export function AdminInvoiceView() {
           Create invoice
         </h2>
         <p className="mt-2 text-sm font-light text-foreground-soft">
-          Fill in the details, then download a professional invoice image to
-          send to your customer.
+          Choose items from your catalogue — price, bond, and description fill
+          in automatically. Then add customer details and download the invoice.
         </p>
       </section>
 
@@ -251,39 +391,154 @@ export function AdminInvoiceView() {
                   Add item
                 </Button>
               </div>
+              {loadingItems ? (
+                <p className="text-sm font-light text-foreground-soft">
+                  Loading catalogue…
+                </p>
+              ) : null}
               <div className="space-y-3">
-                {invoice.lineItems.map((line) => (
-                  <div
-                    key={line.id}
-                    className="grid gap-2 rounded-2xl bg-warm-white p-3 sm:grid-cols-[1fr_120px_auto]"
-                  >
-                    <Input
-                      placeholder="Item description"
-                      value={line.description}
-                      onChange={(e) =>
-                        updateLine(line.id, { description: e.target.value })
-                      }
-                    />
-                    <Input
-                      inputMode="decimal"
-                      placeholder="Amount $"
-                      value={centsToDollarsInput(line.amountCents)}
-                      onChange={(e) =>
-                        updateLine(line.id, {
-                          amountCents: dollarsToCents(e.target.value),
-                        })
-                      }
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => removeLine(line.id)}
+                {invoice.lineItems.map((line) => {
+                  const selectedItem =
+                    allItems.find((item) => item.id === line.itemId) ?? null;
+                  const hasSizes = Boolean(selectedItem?.sizes.length);
+                  const hasSets = Boolean(selectedItem?.setOptions.length);
+
+                  return (
+                    <div
+                      key={line.id}
+                      className="space-y-2 rounded-2xl bg-warm-white p-3"
                     >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
+                      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                        <select
+                          value={line.itemId}
+                          onChange={(e) =>
+                            applyCatalogItem(line.id, e.target.value)
+                          }
+                          className="flex h-11 w-full rounded-2xl border border-sage/30 bg-cream px-3 text-sm font-light text-foreground"
+                          required={!line.description.trim()}
+                        >
+                          <option value="">Select an item</option>
+                          {categories.map((category) => (
+                            <optgroup key={category.id} label={category.name}>
+                              {category.items.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name}
+                                  {item.bondCents
+                                    ? ` · bond ${formatPrice(item.bondCents)}`
+                                    : ""}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeLine(line.id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+
+                      {selectedItem && (hasSizes || hasSets) ? (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {hasSizes ? (
+                            <div className="space-y-1">
+                              <Label className="text-xs">
+                                {selectedItem.selectionLabel || "Option"}
+                              </Label>
+                              <select
+                                value={line.selectedSize}
+                                onChange={(e) =>
+                                  applyCatalogItem(line.id, line.itemId, {
+                                    selectedSize: e.target.value,
+                                    selectedSets: line.selectedSets,
+                                  })
+                                }
+                                className="flex h-11 w-full rounded-2xl border border-sage/30 bg-cream px-3 text-sm font-light text-foreground"
+                              >
+                                <option value="">Select…</option>
+                                {selectedItem.sizes.map((size) => (
+                                  <option key={size} value={size}>
+                                    {size}
+                                    {selectedItem.variantPrices?.[size] != null
+                                      ? ` · ${formatPrice(selectedItem.variantPrices[size])}`
+                                      : ""}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
+                          {hasSets ? (
+                            <div className="space-y-1">
+                              <Label className="text-xs">Sets</Label>
+                              <select
+                                value={line.selectedSets}
+                                onChange={(e) =>
+                                  applyCatalogItem(line.id, line.itemId, {
+                                    selectedSize: line.selectedSize,
+                                    selectedSets: e.target.value,
+                                  })
+                                }
+                                className="flex h-11 w-full rounded-2xl border border-sage/30 bg-cream px-3 text-sm font-light text-foreground"
+                              >
+                                <option value="">Select…</option>
+                                {selectedItem.setOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      <div className="grid gap-2 sm:grid-cols-[1fr_110px_110px]">
+                        <Input
+                          placeholder="Description on invoice"
+                          value={line.description}
+                          onChange={(e) =>
+                            updateLine(line.id, {
+                              description: e.target.value,
+                            })
+                          }
+                        />
+                        <div className="space-y-1">
+                          <Label className="text-xs text-foreground-soft">
+                            Hire $
+                          </Label>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={centsToDollarsInput(line.amountCents)}
+                            onChange={(e) =>
+                              updateLine(line.id, {
+                                amountCents: dollarsToCents(e.target.value),
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-foreground-soft">
+                            Bond $
+                          </Label>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={centsToDollarsInput(line.bondCents)}
+                            onChange={(e) =>
+                              updateLine(line.id, {
+                                bondCents: dollarsToCents(e.target.value),
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -337,7 +592,12 @@ export function AdminInvoiceView() {
             <div className="space-y-2">
               <Label>Totals</Label>
               <div className="rounded-2xl bg-warm-white px-4 py-3 text-sm">
-                <p>Total: {formatPrice(total)}</p>
+                <p>Hire total: {formatPrice(hireTotal)}</p>
+                {bondTotal > 0 ? (
+                  <p className="mt-1">
+                    Refundable bond: {formatPrice(bondTotal)}
+                  </p>
+                ) : null}
                 <p className="mt-1 font-medium text-foreground">
                   Amount due: {formatPrice(balance)}
                 </p>
@@ -351,7 +611,7 @@ export function AdminInvoiceView() {
                 rows={3}
                 value={invoice.notes}
                 onChange={(e) => updateInvoice({ notes: e.target.value })}
-                placeholder="Payment terms, pickup notes, bond info..."
+                placeholder="Payment terms, pickup notes, bond return info..."
               />
             </div>
 

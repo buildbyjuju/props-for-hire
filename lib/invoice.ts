@@ -14,8 +14,13 @@ export type InvoiceType = "hire" | "event";
 
 export type InvoiceLineItem = {
   id: string;
+  /** Catalog item id when chosen from the website; empty for a custom line */
+  itemId: string;
   description: string;
   amountCents: number;
+  bondCents: number;
+  selectedSize: string;
+  selectedSets: string;
 };
 
 export type InvoiceDraft = {
@@ -36,8 +41,12 @@ export type InvoiceDraft = {
 export function createEmptyLineItem(): InvoiceLineItem {
   return {
     id: crypto.randomUUID(),
+    itemId: "",
     description: "",
     amountCents: 0,
+    bondCents: 0,
+    selectedSize: "",
+    selectedSets: "",
   };
 }
 
@@ -77,6 +86,13 @@ export function invoiceSubtotalCents(invoice: InvoiceDraft): number {
   );
 }
 
+export function invoiceBondCents(invoice: InvoiceDraft): number {
+  return invoice.lineItems.reduce(
+    (sum, line) => sum + (Number.isFinite(line.bondCents) ? line.bondCents : 0),
+    0,
+  );
+}
+
 export function invoiceDeliveryCents(invoice: InvoiceDraft): number {
   if (invoice.type !== "hire" || !invoice.includeDelivery) return 0;
   return Number.isFinite(invoice.deliveryFeeCents)
@@ -84,15 +100,20 @@ export function invoiceDeliveryCents(invoice: InvoiceDraft): number {
     : 0;
 }
 
+/** Hire fees + delivery (excludes refundable bonds) */
 export function invoiceTotalCents(invoice: InvoiceDraft): number {
   return invoiceSubtotalCents(invoice) + invoiceDeliveryCents(invoice);
 }
 
+/** Amount the customer needs to pay now (hire + delivery + bonds − deposit) */
 export function invoiceBalanceCents(invoice: InvoiceDraft): number {
   const deposit = Number.isFinite(invoice.depositCents)
     ? invoice.depositCents
     : 0;
-  return Math.max(0, invoiceTotalCents(invoice) - deposit);
+  return Math.max(
+    0,
+    invoiceTotalCents(invoice) + invoiceBondCents(invoice) - deposit,
+  );
 }
 
 export function dollarsToCents(value: string): number {

@@ -3,6 +3,7 @@
 import {
   INVOICE_BUSINESS,
   invoiceBalanceCents,
+  invoiceBondCents,
   invoiceDeliveryCents,
   invoiceSubtotalCents,
   invoiceTotalCents,
@@ -32,11 +33,13 @@ export function InvoiceDocument({
 }) {
   const subtotal = invoiceSubtotalCents(invoice);
   const delivery = invoiceDeliveryCents(invoice);
+  const bond = invoiceBondCents(invoice);
   const total = invoiceTotalCents(invoice);
   const deposit = invoice.depositCents;
   const balance = invoiceBalanceCents(invoice);
   const typeLabel =
     invoice.type === "hire" ? "Props Hire Invoice" : "Event Invoice";
+  const showBondColumn = invoice.lineItems.some((line) => line.bondCents > 0);
 
   return (
     <div
@@ -188,7 +191,9 @@ export function InvoiceDocument({
             borderBottom: "1px solid #dce3d8",
             padding: "12px 0",
             display: "grid",
-            gridTemplateColumns: "1fr 120px",
+            gridTemplateColumns: showBondColumn
+              ? "1fr 100px 100px"
+              : "1fr 120px",
             gap: 12,
             fontSize: 11,
             letterSpacing: "0.14em",
@@ -197,18 +202,28 @@ export function InvoiceDocument({
           }}
         >
           <span>Description</span>
+          {showBondColumn ? (
+            <span style={{ textAlign: "right" }}>Bond</span>
+          ) : null}
           <span style={{ textAlign: "right" }}>Amount</span>
         </div>
 
         <div style={{ marginTop: 8 }}>
           {invoice.lineItems
-            .filter((line) => line.description.trim() || line.amountCents > 0)
+            .filter(
+              (line) =>
+                line.description.trim() ||
+                line.amountCents > 0 ||
+                line.bondCents > 0,
+            )
             .map((line) => (
               <div
                 key={line.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 120px",
+                  gridTemplateColumns: showBondColumn
+                    ? "1fr 100px 100px"
+                    : "1fr 120px",
                   gap: 12,
                   padding: "14px 0",
                   borderBottom: "1px solid #f0ebe3",
@@ -216,6 +231,11 @@ export function InvoiceDocument({
                 }}
               >
                 <span>{line.description || "Item"}</span>
+                {showBondColumn ? (
+                  <span style={{ textAlign: "right" }}>
+                    {line.bondCents > 0 ? formatPrice(line.bondCents) : "—"}
+                  </span>
+                ) : null}
                 <span style={{ textAlign: "right" }}>
                   {formatPrice(line.amountCents)}
                 </span>
@@ -225,7 +245,9 @@ export function InvoiceDocument({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 120px",
+                gridTemplateColumns: showBondColumn
+                  ? "1fr 100px 100px"
+                  : "1fr 120px",
                 gap: 12,
                 padding: "14px 0",
                 borderBottom: "1px solid #f0ebe3",
@@ -233,6 +255,7 @@ export function InvoiceDocument({
               }}
             >
               <span>Delivery fee</span>
+              {showBondColumn ? <span /> : null}
               <span style={{ textAlign: "right" }}>{formatPrice(delivery)}</span>
             </div>
           ) : null}
@@ -252,7 +275,14 @@ export function InvoiceDocument({
           {invoice.type === "hire" && invoice.includeDelivery ? (
             <Row label="Delivery" value={formatPrice(delivery)} />
           ) : null}
-          <Row label="Total" value={formatPrice(total)} strong />
+          {bond > 0 ? (
+            <Row label="Refundable bond" value={formatPrice(bond)} />
+          ) : null}
+          <Row
+            label="Total"
+            value={formatPrice(total + bond)}
+            strong
+          />
           <Row label="Deposit" value={formatPrice(deposit)} />
           <div
             style={{
