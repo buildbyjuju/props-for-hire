@@ -167,6 +167,26 @@ export async function PATCH(request: Request, context: RouteContext) {
       updates.variantPrices = variantPrices;
     }
 
+    if (body.colorImages !== undefined) {
+      if (body.colorImages === null) {
+        updates.colorImages = null;
+      } else if (
+        typeof body.colorImages === "object" &&
+        !Array.isArray(body.colorImages)
+      ) {
+        const images: Record<string, string> = {};
+        for (const [key, raw] of Object.entries(
+          body.colorImages as Record<string, unknown>,
+        )) {
+          const label = key.trim();
+          const url = typeof raw === "string" ? raw.trim() : "";
+          if (!label || !url) continue;
+          images[label] = url;
+        }
+        updates.colorImages = Object.keys(images).length > 0 ? images : null;
+      }
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ ok: true });
     }

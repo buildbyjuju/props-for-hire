@@ -62,6 +62,7 @@ function serializeWebsiteCatalog() {
         bondCents: item.bondCents ?? null,
         selectionLabel: item.selectionLabel ?? null,
         selectionDisplay: item.selectionDisplay ?? null,
+        colorImages: item.colorImages ?? null,
         variantPrices: item.variantPrices ?? null,
         createdAt: null,
       })),
@@ -69,14 +70,23 @@ function serializeWebsiteCatalog() {
   );
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAdminApi();
   if (!auth.ok) {
     return auth.response;
   }
 
   try {
-    // Same hire catalogue the public website uses (DB when available, else items.json)
+    const source = new URL(request.url).searchParams.get("source");
+
+    // Invoice / hire pickers: exact listings shown on the public website
+    if (source === "website") {
+      return NextResponse.json({
+        categories: await serializeWebsiteCatalog(),
+      });
+    }
+
+    // Catalogue management: DB rows (including hidden). Fall back if no DB/categories.
     if (!db) {
       return NextResponse.json({
         categories: await serializeWebsiteCatalog(),
@@ -122,9 +132,12 @@ export async function GET() {
                 sizes: catalogItem?.sizes ?? item.sizes ?? [],
                 setOptions: catalogItem?.setOptions ?? item.setOptions ?? [],
                 setIncludes: item.setIncludes,
-                bondCents: item.bondCents,
-                selectionLabel: item.selectionLabel,
-                selectionDisplay: item.selectionDisplay,
+                bondCents: catalogItem?.bondCents ?? item.bondCents,
+                selectionLabel:
+                  catalogItem?.selectionLabel ?? item.selectionLabel,
+                selectionDisplay:
+                  catalogItem?.selectionDisplay ?? item.selectionDisplay,
+                colorImages: catalogItem?.colorImages ?? item.colorImages,
                 variantPrices: catalogItem?.variantPrices ?? item.variantPrices,
                 createdAt: item.createdAt.toISOString(),
               };
@@ -132,18 +145,6 @@ export async function GET() {
         ),
       })),
     );
-
-    const activeCount = catalog.reduce(
-      (sum, cat) => sum + cat.items.filter((item) => item.isActive).length,
-      0,
-    );
-
-    // If the DB catalogue is empty, fall back to website hire items
-    if (activeCount === 0) {
-      return NextResponse.json({
-        categories: await serializeWebsiteCatalog(),
-      });
-    }
 
     return NextResponse.json({ categories: catalog });
   } catch (error) {

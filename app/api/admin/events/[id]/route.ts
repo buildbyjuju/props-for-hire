@@ -120,10 +120,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Keep linked hire dates in sync with the event date
+    // Keep linked hire dates (and event-labelled customer names) in sync
     await database
       .update(bookings)
-      .set({ eventDate })
+      .set({
+        eventDate,
+        customerName: `Event — ${event.title}`,
+      })
       .where(eq(bookings.adminEventId, id));
 
     return NextResponse.json({

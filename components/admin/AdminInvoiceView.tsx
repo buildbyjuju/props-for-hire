@@ -78,6 +78,7 @@ export function AdminInvoiceView() {
   const [invoice, setInvoice] = useState<InvoiceDraft>(() => createEmptyInvoice());
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [itemSearch, setItemSearch] = useState("");
   const [exporting, setExporting] = useState(false);
   const documentRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +87,21 @@ export function AdminInvoiceView() {
     [categories],
   );
 
+  const filteredCategories = useMemo(() => {
+    const query = itemSearch.trim().toLowerCase();
+    if (!query) return categories;
+    return categories
+      .map((category) => ({
+        ...category,
+        items: category.items.filter(
+          (item) =>
+            item.name.toLowerCase().includes(query) ||
+            category.name.toLowerCase().includes(query),
+        ),
+      }))
+      .filter((category) => category.items.length > 0);
+  }, [categories, itemSearch]);
+
   const hireTotal = useMemo(() => invoiceTotalCents(invoice), [invoice]);
   const bondTotal = useMemo(() => invoiceBondCents(invoice), [invoice]);
   const balance = useMemo(() => invoiceBalanceCents(invoice), [invoice]);
@@ -93,7 +109,8 @@ export function AdminInvoiceView() {
   const loadItems = useCallback(async () => {
     setLoadingItems(true);
     try {
-      const res = await fetch("/api/admin/items");
+      // Same hire listings customers see on /props
+      const res = await fetch("/api/admin/items?source=website");
       if (!res.ok) throw new Error("Failed to load items");
       const data = await res.json();
       const next = (data.categories as CatalogCategory[]).map((category) => ({
@@ -117,7 +134,7 @@ export function AdminInvoiceView() {
       }));
       setCategories(next.filter((category) => category.items.length > 0));
     } catch {
-      toast.error("Could not load catalogue items");
+      toast.error("Could not load website hire listings");
     } finally {
       setLoadingItems(false);
     }
@@ -378,12 +395,12 @@ export function AdminInvoiceView() {
             <div className="space-y-3 sm:col-span-2">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <Label>Items from website</Label>
+                  <Label>Choose from website listings</Label>
                   <p className="mt-1 text-xs font-light text-foreground-soft">
-                    Pick hire items like Black Plinth or Food Warmers — price and
-                    bond fill in automatically.
+                    Same hire items as on the website (Black Plinth, Food
+                    Warmers, etc.). Price and bond fill in automatically.
                     {!loadingItems && allItems.length > 0
-                      ? ` ${allItems.length} items available.`
+                      ? ` ${allItems.length} listings available.`
                       : null}
                   </p>
                 </div>
@@ -400,15 +417,28 @@ export function AdminInvoiceView() {
                   Add item
                 </Button>
               </div>
+              {!loadingItems && allItems.length > 0 ? (
+                <div className="space-y-1">
+                  <Label htmlFor="inv-item-search" className="text-xs">
+                    Search listings
+                  </Label>
+                  <Input
+                    id="inv-item-search"
+                    value={itemSearch}
+                    onChange={(e) => setItemSearch(e.target.value)}
+                    placeholder="e.g. black plinth, food warmer…"
+                  />
+                </div>
+              ) : null}
               {loadingItems ? (
                 <p className="text-sm font-light text-foreground-soft">
-                  Loading website hire items…
+                  Loading website hire listings…
                 </p>
               ) : null}
               {!loadingItems && allItems.length === 0 ? (
                 <p className="rounded-2xl border border-sage/30 bg-warm-white px-4 py-3 text-sm text-foreground-soft">
-                  No hire items loaded. Check the Catalogue tab, then refresh this
-                  page.
+                  No website hire listings loaded. Open Catalogue, make sure
+                  items are live, then refresh Invoices.
                 </p>
               ) : null}
               <div className="space-y-3">
@@ -417,15 +447,29 @@ export function AdminInvoiceView() {
                     allItems.find((item) => item.id === line.itemId) ?? null;
                   const hasSizes = Boolean(selectedItem?.sizes.length);
                   const hasSets = Boolean(selectedItem?.setOptions.length);
+                  const selectCategories =
+                    selectedItem &&
+                    !filteredCategories.some((category) =>
+                      category.items.some((item) => item.id === selectedItem.id),
+                    )
+                      ? [
+                          {
+                            id: "selected",
+                            name: "Selected",
+                            items: [selectedItem],
+                          },
+                          ...filteredCategories,
+                        ]
+                      : filteredCategories;
 
                   return (
                     <div
                       key={line.id}
-                      className="space-y-2 rounded-2xl bg-warm-white p-3"
+                      className="space-y-2 rounded-2xl border border-sage/25 bg-warm-white p-3"
                     >
                       <div className="space-y-1">
                         <Label className="text-xs text-foreground-soft">
-                          Choose hire item
+                          Website hire listing
                         </Label>
                         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                           <select
@@ -437,9 +481,9 @@ export function AdminInvoiceView() {
                             required={!line.description.trim()}
                           >
                             <option value="">
-                              Select from website items…
+                              Select a website listing…
                             </option>
-                            {categories.map((category) => (
+                            {selectCategories.map((category) => (
                               <optgroup
                                 key={category.id}
                                 label={category.name}

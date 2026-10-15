@@ -80,6 +80,13 @@ export function AdminEventsView({
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editEventDate, setEditEventDate] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const loadEvents = useCallback(async () => {
     setLoading(true);
     try {
@@ -118,7 +125,20 @@ export function AdminEventsView({
     });
   }, [loadEvents]);
 
+  function startEditing(event: AdminEventSummary) {
+    setEditTitle(event.title);
+    setEditEventDate(event.eventDate);
+    setEditLocation(event.location);
+    setEditDescription(event.description ?? "");
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setEditing(false);
+  }
+
   async function openEvent(event: AdminEventSummary) {
+    setEditing(false);
     setSelectedEvent(event);
     setHires([]);
     await loadEventDetail(event.id);
@@ -156,6 +176,45 @@ export function AdminEventsView({
     }
   }
 
+  async function handleSaveEvent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedEvent) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/events/${selectedEvent.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          eventDate: editEventDate,
+          location: editLocation,
+          description: editDescription,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update event");
+        return;
+      }
+
+      const updated = data.event as AdminEventSummary;
+      toast.success("Event updated");
+      setEditing(false);
+      setSelectedEvent({
+        ...updated,
+        hireCount: hires.length,
+      });
+      await loadEvents();
+      await loadEventDetail(updated.id);
+      onHiresChanged();
+    } catch {
+      toast.error("Could not update event");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleDeleteEvent(eventId: string) {
     if (
       !window.confirm(
@@ -174,6 +233,7 @@ export function AdminEventsView({
     }
 
     toast.success("Event deleted");
+    setEditing(false);
     setSelectedEvent(null);
     setHires([]);
     await loadEvents();
@@ -211,41 +271,127 @@ export function AdminEventsView({
             variant="outline"
             size="sm"
             onClick={() => {
+              setEditing(false);
               setSelectedEvent(null);
               setHires([]);
             }}
           >
             ← All events
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => handleDeleteEvent(selectedEvent.id)}
-          >
-            Delete event
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {!editing ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => startEditing(selectedEvent)}
+              >
+                Edit event
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleDeleteEvent(selectedEvent.id)}
+            >
+              Delete event
+            </Button>
+          </div>
         </div>
 
         <section className="rounded-3xl bg-cream p-5 shadow-luxury sm:p-6">
-          <p className="text-xs uppercase tracking-[0.14em] text-sage">Event</p>
-          <h2 className="mt-2 font-serif text-2xl font-light text-foreground">
-            {selectedEvent.title}
-          </h2>
-          <p className="mt-2 text-sm font-light text-foreground-soft">
-            {formatDisplayDate(selectedEvent.eventDate)}
-          </p>
-          <p className="mt-1 text-sm text-foreground">{selectedEvent.location}</p>
-          {selectedEvent.description ? (
-            <p className="mt-3 text-sm font-light leading-relaxed text-foreground-soft">
-              {selectedEvent.description}
-            </p>
-          ) : null}
-          <p className="mt-4 text-xs font-light text-foreground-soft">
-            Hire lock window: {formatShortDate(window.pickupDate)} →{" "}
-            {formatShortDate(window.eventDate)} →{" "}
-            {formatShortDate(window.returnDate)} (public + admin calendar)
-          </p>
+          {editing ? (
+            <>
+              <p className="text-xs uppercase tracking-[0.14em] text-sage">
+                Edit event
+              </p>
+              <form
+                onSubmit={handleSaveEvent}
+                className="mt-4 grid gap-4 sm:grid-cols-2"
+              >
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="edit-event-title">Event title</Label>
+                  <Input
+                    id="edit-event-title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-event-date">Event date</Label>
+                  <Input
+                    id="edit-event-date"
+                    type="date"
+                    value={editEventDate}
+                    onChange={(e) => setEditEventDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-event-location">Location</Label>
+                  <Input
+                    id="edit-event-location"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="edit-event-description">Description</Label>
+                  <Textarea
+                    id="edit-event-description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Theme, guest count, notes..."
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 sm:col-span-2">
+                  <Button type="submit" disabled={saving}>
+                    {saving ? "Saving..." : "Save changes"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={saving}
+                    onClick={cancelEditing}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <p className="text-xs font-light text-foreground-soft sm:col-span-2">
+                  Changing the date also updates linked hire dates on the
+                  calendar.
+                </p>
+              </form>
+            </>
+          ) : (
+            <>
+              <p className="text-xs uppercase tracking-[0.14em] text-sage">
+                Event
+              </p>
+              <h2 className="mt-2 font-serif text-2xl font-light text-foreground">
+                {selectedEvent.title}
+              </h2>
+              <p className="mt-2 text-sm font-light text-foreground-soft">
+                {formatDisplayDate(selectedEvent.eventDate)}
+              </p>
+              <p className="mt-1 text-sm text-foreground">
+                {selectedEvent.location}
+              </p>
+              {selectedEvent.description ? (
+                <p className="mt-3 text-sm font-light leading-relaxed text-foreground-soft">
+                  {selectedEvent.description}
+                </p>
+              ) : null}
+              <p className="mt-4 text-xs font-light text-foreground-soft">
+                Hire lock window: {formatShortDate(window.pickupDate)} →{" "}
+                {formatShortDate(window.eventDate)} →{" "}
+                {formatShortDate(window.returnDate)} (public + admin calendar)
+              </p>
+            </>
+          )}
         </section>
 
         <section className="rounded-3xl border-2 border-sage/40 bg-cream p-5 shadow-luxury sm:p-6">
@@ -409,26 +555,45 @@ export function AdminEventsView({
         ) : (
           <ul className="mt-5 space-y-3">
             {events.map((event) => (
-              <li key={event.id}>
+              <li
+                key={event.id}
+                className="flex flex-col gap-3 rounded-2xl bg-warm-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <button
                   type="button"
                   onClick={() => void openEvent(event)}
-                  className="flex w-full flex-col rounded-2xl bg-warm-white px-4 py-4 text-left transition hover:bg-sage/10 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex-1 text-left transition hover:opacity-80"
                 >
-                  <div>
-                    <p className="font-serif text-lg font-light text-foreground">
-                      {event.title}
-                    </p>
-                    <p className="mt-1 text-sm font-light text-foreground-soft">
-                      {formatDisplayDate(event.eventDate)} · {event.location}
-                    </p>
-                  </div>
-                  <p className="mt-2 text-xs uppercase tracking-wider text-sage sm:mt-0">
+                  <p className="font-serif text-lg font-light text-foreground">
+                    {event.title}
+                  </p>
+                  <p className="mt-1 text-sm font-light text-foreground-soft">
+                    {formatDisplayDate(event.eventDate)} · {event.location}
+                  </p>
+                  <p className="mt-2 text-xs uppercase tracking-wider text-sage">
                     {event.hireCount}{" "}
-                    {event.hireCount === 1 ? "item hired" : "items hired"} ·
-                    Open to hire →
+                    {event.hireCount === 1 ? "item hired" : "items hired"}
                   </p>
                 </button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      void openEvent(event).then(() => startEditing(event));
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void openEvent(event)}
+                  >
+                    Open
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
